@@ -1,0 +1,23 @@
+{
+  "name": "dream-team",
+  "version": "1.0.0",
+  "description": "AI Agent Dream Team — 27 specialized agents, 6 verification gates, structured memory, and self-learning. Full 6-phase pipeline from vision to shipped code.",
+  "author": {
+    "name": "Exclad"
+  },
+  "homepage": "https://github.com/Exclad/dream-team-plugin",
+  "repository": "https://github.com/Exclad/dream-team-plugin",
+  "license": "MIT",
+  "keywords": [
+    "agents",
+    "multi-agent",
+    "software-development",
+    "pipeline",
+    "code-review",
+    "verification",
+    "orchestration",
+    "dream-team",
+    "ai-agents",
+    "slash-commands"
+  ]
+}

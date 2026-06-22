@@ -1,0 +1,16 @@
+{
+  "description": "Dream Team session hooks — bootstraps memory/rules infrastructure on session start",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/bootstrap.sh\""
+          }
+        ]
+      }
+    ]
+  }
+}

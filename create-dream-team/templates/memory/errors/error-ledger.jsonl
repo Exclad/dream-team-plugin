@@ -1,0 +1,14 @@
+# Error Ledger Schema:
+# Each line is a JSON object with these fields:
+# {
+#   "timestamp": "ISO 8601 datetime",
+#   "severity": "critical|high|medium|low",
+#   "category": "auth|data|concurrency|security|performance|ui|api|infra|testing|other",
+#   "agent": "which agent found it",
+#   "symptom": "what was observed",
+#   "root_cause": "what caused it",
+#   "fix": "what fixed it",
+#   "pattern_ref": "patterns/<slug>.md or null",
+#   "session": "sessions/YYYY-MM-DD.md"
+# }
+{"timestamp":"2026-06-22T00:00:00Z","severity":"info","category":"other","agent":"system","symptom":"Error ledger initialized","root_cause":"N/A","fix":"N/A","pattern_ref":null,"session":null}

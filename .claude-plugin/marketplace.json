@@ -1,0 +1,23 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "dream-team-marketplace",
+  "description": "AI Agent Dream Team — 27 specialized agents for full-cycle software development with structured memory and self-learning",
+  "owner": {
+    "name": "Exclad",
+    "url": "https://github.com/Exclad"
+  },
+  "plugins": [
+    {
+      "name": "dream-team",
+      "description": "27 specialized AI agents, 6 verification gates, structured memory, and self-learning. Full 6-phase pipeline from vision to shipped code. Includes concierge interviewing, parallel strategy, worktree-isolated execution, 6-gate verification, and automated shipping.",
+      "source": "./dream-team-plugin",
+      "category": "development",
+      "version": "1.0.0",
+      "author": {
+        "name": "Exclad"
+      },
+      "homepage": "https://github.com/Exclad/dream-team-plugin",
+      "tags": ["multi-agent", "pipeline", "code-review", "verification", "orchestration"]
+    }
+  ]
+}
