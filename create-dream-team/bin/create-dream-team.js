@@ -54,7 +54,7 @@ info('Step 1/5: Installing dream-team plugin...');
 let pluginInstalled = false;
 try {
   // Try adding the marketplace
-  execSync('claude plugin marketplace add github:Exclad/dream-team-plugin', {
+  execSync('claude plugin marketplace add Exclad/dream-team-plugin', {
     stdio: 'pipe',
     timeout: 30000
   });
@@ -65,7 +65,7 @@ try {
     log('  Marketplace already registered.');
   } else {
     warn('  Could not register marketplace. You can add it manually:');
-    warn('  claude plugin marketplace add github:Exclad/dream-team-plugin');
+    warn('  claude plugin marketplace add Exclad/dream-team-plugin');
   }
 }
 

@@ -1,6 +1,6 @@
 {
   "name": "dream-team",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "AI Agent Dream Team — 27 specialized agents, 6 verification gates, structured memory, and self-learning. Full 6-phase pipeline from vision to shipped code.",
   "author": {
     "name": "Exclad"

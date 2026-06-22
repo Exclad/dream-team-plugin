@@ -7,7 +7,7 @@
 
 ### Option 1: Marketplace (recommended)
 ```bash
-claude plugin marketplace add github:Exclad/dream-team-plugin
+claude plugin marketplace add Exclad/dream-team-plugin
 claude plugin install dream-team@dream-team-marketplace
 ```
 
