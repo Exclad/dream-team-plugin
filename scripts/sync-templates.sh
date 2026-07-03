@@ -29,7 +29,7 @@ if [ "${1:-}" = "--check" ]; then
 fi
 
 for dir in memory rules; do
-  rm -rf "$DEST/$dir"
+  rm -rf "${DEST:?}/${dir:?}"
   mkdir -p "$DEST/$dir"
   cp -R "$SRC/$dir/." "$DEST/$dir/"
 done

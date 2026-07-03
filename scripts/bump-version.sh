@@ -28,6 +28,7 @@ if [ "${1:-}" = "--check" ]; then
   UNIQUE=$(echo "$VERSIONS" | sort -u | wc -l)
   if [ "$UNIQUE" -ne 1 ]; then
     echo "VERSION MISMATCH across manifests:" >&2
+    # shellcheck disable=SC2086 # intentional: $VERSIONS is three lines mapped to three %s
     printf 'plugin.json:      %s\nmarketplace.json: %s\npackage.json:     %s\n' $VERSIONS >&2
     exit 1
   fi
