@@ -95,10 +95,11 @@ Blocking criteria per gate:
 
 **All gates pass:** Report "✅ All gates passed. Ready for `/ship`."
 
-**Some gates block:** 
-- List blocking findings clearly
-- Return to `/build` (or specific lane) for fixes
-- Re-run `/review` after fixes (Tier 1 first, always)
+**Some gates block — targeted fix routing (do NOT re-run all of `/build`):**
+- Read only the blocked gates' report bodies; map each blocking finding to its owning lane from the files it cites
+- Spawn ONLY the owning lane agents (`model` = execution role, worktree isolation): "Fix exactly the findings assigned to you in `.claude/memory/[REPORT].md` — findings [numbers]. Change nothing else. Smallest viable diff. Commit before returning."
+- Re-run `/review` after fixes (Tier 1 first; blocked gates only)
+- **Arbitration (config `arbitration: on`):** same gate blocks twice on the same finding → one-shot arbitration agent (subagent_type "dream-team:tech-lead", `model: opus`) with only that finding, the attempted fix, and the re-block reason: VALID (definitive fix, routed to the lane) or INVALID (re-run the gate with the finding waived and the reason quoted). Never a third blind retry.
 - **Retry limit: 3 attempts max.** On 3rd fail, escalate to product-manager for re-scoping.
 
 ### Step 5: Update context

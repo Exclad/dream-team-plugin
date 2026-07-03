@@ -75,6 +75,14 @@ On first `/dream-team` run you pick a model profile (stored in `.claude/memory/c
 
 **Built-in token discipline:** gate agents report a one-line verdict the orchestrator greps (never re-reads full reports); agents return ≤10-line summaries instead of pasting files; strategy artifacts are capped at ~150 lines; lanes read only their own section of ARCHITECTURE.md; features are sized S/M/L at interview time so small features don't pay for the full 15-agent pipeline; cheap checks (tests/lint) run before any review agent spawns.
 
+## Workflow Toggles (config.md)
+
+- **pr_flow** (`auto`/`on`/`off`) — pipeline works on a `feature/<slug>` branch and `/ship` opens a PR via `gh`; tag lands after merge.
+- **tdd** (`on`/`off`) — test-writer turns acceptance criteria into failing tests before lanes run; lanes make them pass. Pairs with `ultra` plan detail for weak executors.
+- **arbitration** (`on`/`off`) — a gate that blocks twice on the same finding triggers a one-shot opus arbitration (finding valid + definitive fix, or waived with reason) instead of a third blind retry.
+
+Also built in: blocked gates route findings to the *owning lane only* (never a full re-build), interview decisions are captured as ADRs in `.claude/memory/decisions/`, effort estimates vs actuals feed a drift check at ship time, and `/dream-team status` prints pipeline state without running anything.
+
 ## Rate-Limit-Proof Checkpointing
 
 Every agent completion updates `.claude/memory/context.md` (including per-lane and per-gate status tables) and commits it: `checkpoint: <phase/step>`. If a rate limit or dead session interrupts mid-phase, `/dream-team resume` re-runs **only** unfinished lanes and non-passed gates — passed work is never repeated. Gate reports start as `GATE RUNNING` and flip to a verdict on completion, so a half-finished gate can never masquerade as passed. Disable the commits with `checkpoint_commits: off` in config.md.

@@ -46,6 +46,21 @@ session model — they happen in the main conversation and cannot be overridden 
 
 Rule of thumb: execution model `haiku` or a weak `inherit` model → set `ultra`.
 
+## Workflow Toggles
+
+**pr_flow:** auto
+- `auto` — use a feature branch + PR when `gh` is available and an origin remote exists; otherwise work on the current branch
+- `on` — always feature branch + PR (fail loudly if `gh` missing)
+- `off` — commit to the current branch, no PR
+
+**tdd:** off
+- `on` — after Foundation, test-writer converts the plan's acceptance criteria into FAILING tests before any lane runs; lanes are told "make these tests pass". Strongly recommended with `plan_detail: ultra` — weak executors do far better with a mechanical target.
+- `off` — tests reviewed at the verification gate only
+
+**arbitration:** on
+- `on` — when the same gate blocks twice on the same finding, escalate that single finding to a one-shot opus arbitration call (verdict: finding VALID + definitive fix, or INVALID + why) instead of a third blind retry
+- `off` — plain 3-attempt retry loop
+
 ## Pipeline Sizing
 
 Sizing is decided per feature at the end of Phase 0 and recorded in context.md — not here.

@@ -27,6 +27,9 @@ Interview rules:
 - **Depth-first.** Finish one decision chain completely before moving to the next. Flag dependencies between decisions explicitly.
 - **Don't stop early.** The interview ends when you can answer every important design question without further input.
 
+**Step 1b: ADR capture**
+For each significant decision made during the interview (technology choice, architecture direction, scope cut — anything with rejected alternatives), write an ADR to `.claude/memory/decisions/YYYY-MM-DD-<slug>.md` using `_TEMPLATE.md`: the decision, alternatives considered, and why.
+
 **Step 2: Write VISION.md**
 When the interview is complete, synthesize everything into `.claude/memory/VISION.md`: problem, users, core interactions, data model, constraints, architecture direction, MVP boundary, success metrics, and all decisions made (with the user's answers).
 

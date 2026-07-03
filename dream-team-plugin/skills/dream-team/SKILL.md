@@ -41,8 +41,13 @@ If that script is unavailable, copy the plugin's `templates/` content into `.cla
 - **Question 1 — "Which model profile?"** Options: **Balanced (Recommended)** — sonnet for everything; **Economy** — sonnet planning/execution, haiku verification/ship (best for Pro plan quotas); **Max** — opus planning+verification, sonnet execution/ship; **Custom** — pick a model per role.
 - **If Custom:** ask a second AskUserQuestion with 4 questions — one per role (**planning**, **execution**, **verification**, **ship**) — each with options: Opus / Sonnet / Haiku / Inherit (session model — pick Inherit if running through a router like DeepSeek).
 - **Question 2 — "Plan detail level?"** Options: **Standard** — plans state what/why, executor fills in routine details (right for Claude-class executors); **Ultra** — plans leave zero judgment calls (required for weak executors like Haiku or DeepSeek Flash). **Recommend Ultra automatically if the execution model is haiku or a weak inherit model.**
+- **Question 3 — "Test-first (TDD) mode?"** Options: **On** — failing tests written from acceptance criteria before lanes run; lanes make them pass (**recommend On when plan detail is Ultra** — weak executors do far better with a mechanical target); **Off** — tests reviewed at the verification gate only.
 
 Write the answers into `.claude/memory/config.md` (copy the template structure from `${CLAUDE_PLUGIN_ROOT}/templates/memory/config.md` if absent) and checkpoint.
+
+## Status
+
+If the argument is `status`: read `.claude/memory/context.md` and report — current phase, Feature Size, Lane Status and Gate Status tables, blockers, and the single next action. Then STOP. No agents, no changes.
 
 ## Resume
 
@@ -90,7 +95,10 @@ Interview rules:
 - **M** — one feature, few components → PM + architect (+ ux-designer if UI) + plan-checker; only lanes with real work; all applicable gates
 - **L** — multi-domain feature or new project → full pipeline
 
-Then: write `.claude/memory/VISION.md`; record Size in context.md; checkpoint; confirm: "Does this VISION.md capture what you want?"
+Then:
+1. Write `.claude/memory/VISION.md`; record Size in context.md.
+2. **ADR capture:** for each significant decision made during the interview (technology choice, architecture direction, scope cut — anything with rejected alternatives), write an ADR to `.claude/memory/decisions/YYYY-MM-DD-<slug>.md` using `_TEMPLATE.md`: the decision, the alternatives considered, and why. These are what the verifier's decision-coverage check verifies against.
+3. Checkpoint; confirm: "Does this VISION.md capture what you want?"
 
 ---
 
@@ -136,9 +144,11 @@ Checkpoint: Phase 2 complete, Foundation in progress.
 
 **Do this BEFORE forking worktree lanes.**
 
-1. Read ARCHITECTURE.md (or PLAN.md for Size S) to determine structure
-2. Create base directories; init shared config files (`package.json`, `tsconfig.json`, `.gitignore`, framework config); shared types/constants; base dependency list
-3. Commit: "Foundation: project skeleton"
+1. **Feature branch** (if config `pr_flow` is `on`, or `auto` with `gh` + an origin remote available): `git checkout -b feature/<slug>` — all pipeline commits, including checkpoints, land here instead of main. Record the branch name in context.md.
+2. Read ARCHITECTURE.md (or PLAN.md for Size S) to determine structure
+3. Create base directories; init shared config files (`package.json`, `tsconfig.json`, `.gitignore`, framework config); shared types/constants; base dependency list
+4. Commit: "Foundation: project skeleton"
+5. **TDD step** (if config `tdd: on`): Agent call, `model` = verification role — "You are the test-writer agent. Read the acceptance criteria in `.claude/memory/PLAN.md` (and `.claude/memory/SPEC.md` if present). Write FAILING tests that encode each acceptance criterion — one test per criterion, named after its task ID. Do NOT implement any production code. Commit the tests. Return a ≤10-line summary listing the test file paths." Verify the tests fail (`Tier 1` runner), commit, checkpoint.
 
 Lanes must NOT create their own package.json or config files. Checkpoint.
 
@@ -160,7 +170,9 @@ All Agent calls in one message, each with `isolation: "worktree"` and `model` = 
 - **devops-engineer** (infra): "Read your `## Lane: devops` section of `.claude/memory/ARCHITECTURE.md`. Produce Dockerfile, CI/CD config, deployment manifests. Commit your work in the worktree before returning. Return a ≤10-line summary."
 - **executor** (everything else): "Read `.claude/memory/PLAN.md`. Execute all tasks not covered by other lanes, exactly as written. Smallest viable diff per task. Escalate if blocked. Commit your work in the worktree before returning. Return a ≤10-line summary."
 
-As EACH lane returns: update its Lane Status row (`committed`), checkpoint. Don't wait for all lanes to record progress.
+**If config `tdd: on`:** append to every lane prompt: "Failing tests encoding your acceptance criteria exist at [paths from the TDD step]. Your job is to make YOUR lane's tests pass without modifying the tests."
+
+As EACH lane returns: update its Lane Status row (`committed`) **and record its actual effort vs the PLAN.md estimate in the Adaptive Estimation Ledger** in context.md, then checkpoint. Don't wait for all lanes to record progress.
 
 ### Step 3.3: Merge worktrees
 Merge each committed lane; resolve conflicts; set row to `merged`; checkpoint per lane.
@@ -193,7 +205,16 @@ All Agent calls in one message, `model` = verification role. Gate prompts (each 
 ### Step 4.2: Evaluate — by grep, not by reading
 For each gate file: read **line 1 only** (e.g. `head -1 .claude/memory/REVIEW.md`). `GATE PASSED` / `GATE BLOCKED — reason` / `GATE RUNNING` (= agent died; re-invoke). Record each verdict + attempt in Gate Status; checkpoint as each lands. Only read a report's body when its gate BLOCKED and you need the findings to route fixes.
 
-**All pass** → Phase 5. **Any block** → report the blocking findings → return to Phase 3 for fixes → re-run Phase 4 (Tier 1 first; blocked gates only). **Max 3 attempts**, then escalate to product-manager for re-scoping.
+**All pass** → Phase 5.
+
+**Any block — targeted fix routing (do NOT re-enter all of Phase 3):**
+1. Read the blocked gates' report bodies. Map each blocking finding to its owning lane (frontend / backend / data / devops / executor) from the files it cites.
+2. Spawn ONLY the owning lane agents (`model` = execution role, worktree isolation), one per lane with findings: "Fix exactly the findings assigned to you in `.claude/memory/[REPORT].md` — findings [numbers]. Change nothing else. Smallest viable diff. Commit before returning."
+3. Merge fixes, then re-run Phase 4: Tier 1 first, then ONLY the blocked gates.
+
+**Arbitration (config `arbitration: on`):** if the same gate blocks twice on the same finding, do NOT retry a third time blind. Spawn a one-shot arbitration agent — subagent_type "dream-team:tech-lead", `model: opus` — with only that finding, the fix that was attempted, and the gate's re-block reason: "Verdict required: is this finding VALID (give the definitive fix, step by step) or INVALID (explain why the gate should waive it)?" If VALID → route the definitive fix to the owning lane. If INVALID → re-run the gate with: "Arbitration has waived finding [N] for this reason: [...]. Re-evaluate without it."
+
+**Max 3 attempts**, then escalate to product-manager for re-scoping.
 
 ---
 
@@ -203,7 +224,11 @@ Agent calls with `model` = ship role:
 
 **Step 5.1 — docs-writer:** "Read the memory artifacts (VISION.md, PLAN.md, ARCHITECTURE.md) and current codebase. Produce: README.md (create/update), API docs for new/changed endpoints, CHANGELOG entry (Keep a Changelog). Return a ≤10-line summary." Checkpoint.
 
-**Step 5.2 — release-manager:** "Run your release readiness checklist. Determine semver bump, create git tag, prepare PR description linking artifacts. Return a ≤10-line summary." Checkpoint.
+**Step 5.2 — release-manager:** "Run your release readiness checklist. Determine semver bump and prepare release notes + PR description linking artifacts. Do NOT create a git tag — tagging happens after merge. Return a ≤10-line summary." Checkpoint.
+
+**Step 5.2b — Open the PR** (if a feature branch was created at Foundation): push the branch and run `gh pr create` with the release-manager's PR description. Present the PR link. If `pr_flow` is off, skip; the release-manager's notes stand alone. Tag only after the PR merges (or immediately when pr_flow is off).
+
+**Step 5.2c — Estimation drift check:** compare actual vs estimated effort in the Adaptive Estimation Ledger (populated during Phase 3). Apply the drift thresholds documented in context.md: ≥20% tasks off → log a warning under Blockers; ≥40% → flag that future plans from this codebase need re-decomposition; record the drift summary in the session summary.
 
 **Step 5.3 — Final vision check (INLINE — not a subagent):** Read VISION.md, examine what was built, present a structured requested-vs-delivered comparison, ask: "Does this match your vision?"
 

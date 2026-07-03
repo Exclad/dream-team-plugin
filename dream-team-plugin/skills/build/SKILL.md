@@ -36,6 +36,7 @@ Read `.claude/memory/context.md`. If Phase 2 (User Approval) is not marked compl
 
 **Do this BEFORE forking worktree lanes.** This prevents merge chaos.
 
+0. **Feature branch** (if config `pr_flow` is `on`, or `auto` with `gh` + origin remote available): `git checkout -b feature/<slug>`; record the branch in context.md
 1. Read ARCHITECTURE.md to determine the project structure
 2. Create base directory structure (e.g., `src/`, `app/`, `components/`, `lib/`, `api/`)
 3. Initialize shared config files: `package.json`, `tsconfig.json`, `.gitignore`, framework config
@@ -43,6 +44,10 @@ Read `.claude/memory/context.md`. If Phase 2 (User Approval) is not marked compl
 5. Commit this foundation: `git commit -m "Foundation: project skeleton"`
 
 **Only THEN** proceed to Step 2. Lanes must NOT create their own package.json or config files — those already exist from Foundation.
+
+### Step 1b: TDD step (if config `tdd: on`)
+
+Agent call, `model` = verification role: "You are the test-writer agent. Read the acceptance criteria in `.claude/memory/PLAN.md` (and SPEC.md if present). Write FAILING tests encoding each criterion — one test per criterion, named after its task ID. No production code. Commit the tests. Return a ≤10-line summary listing test file paths." Verify they fail, commit, checkpoint. Then append to every lane prompt: "Failing tests encoding your acceptance criteria exist at [paths]. Make YOUR lane's tests pass without modifying the tests."
 
 ### Step 2: Identify work streams
 
@@ -102,6 +107,7 @@ Wait for all lanes to complete. For each lane:
 Update `.claude/memory/context.md`:
 - Set "Current Status" → Phase: Execution complete
 - Mark Phase 3 complete in pipeline table; all Lane Status rows `merged` or `skipped`
+- Record each lane's actual effort vs its PLAN.md estimate in the Adaptive Estimation Ledger
 - Note any deviations from PLAN.md
 - Update "Last Updated" timestamp
 - Commit the checkpoint

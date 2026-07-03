@@ -29,9 +29,15 @@ Use the Agent tool: description="Generate documentation"
 ### Step 2: release-manager
 Use the Agent tool: description="Create release"
 - subagent_type: "dream-team:release-manager"
-- prompt: "You are the release-manager agent. Run your release readiness checklist. Then: (1) Determine semver bump, (2) Create git tag, (3) Prepare PR description. You are NOT done until you have determined the version and created the tag. Do it NOW."
+- prompt: "You are the release-manager agent. Run your release readiness checklist. Then: (1) Determine semver bump, (2) Prepare release notes and a PR description linking the memory artifacts. Do NOT create a git tag — tagging happens after merge. You are NOT done until the version is determined and the notes are written."
 
 **Verify:** After agent returns, check that a version was determined. If NO, re-invoke ONCE.
+
+### Step 2b: Open the PR
+If a feature branch was created at Foundation (config `pr_flow`): push the branch and run `gh pr create` with the release-manager's PR description; present the link. Tag only after the PR merges. If `pr_flow` is off: no PR; create the tag now on the current branch.
+
+### Step 2c: Estimation drift check
+Compare actual vs estimated effort in context.md's Adaptive Estimation Ledger. Apply the documented thresholds (≥20% off → warning under Blockers; ≥40% → flag re-decomposition need). Record the drift summary for the session summary.
 
 ### Step 3: Final vision check (runs INLINE — not as a subagent)
 Subagents cannot talk to the user, so you do this yourself:
