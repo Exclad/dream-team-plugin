@@ -110,6 +110,27 @@ Interrupted mid-pipeline? `/dream-team resume` picks up from the phase recorded 
 > Prefer a project `CLAUDE.md` identity file and recommended permissions too?
 > Run `npx create-dream-team` once — it adds those on top of the plugin.
 
+## Update
+
+```bash
+npx create-dream-team update
+# or directly:
+claude plugin marketplace update dream-team-marketplace
+claude plugin update dream-team@dream-team-marketplace
+```
+Restart Claude Code to apply. The npx form also merges any new memory templates (e.g. new config options) into your project without touching existing files. Release notes: [CHANGELOG.md](https://github.com/Exclad/dream-team-plugin/blob/main/CHANGELOG.md).
+
+## Uninstall
+
+```bash
+npx create-dream-team uninstall            # keeps .claude/memory/ (your project's history)
+npx create-dream-team uninstall --purge    # removes memory + rules too
+# or directly:
+claude plugin uninstall dream-team@dream-team-marketplace
+claude plugin marketplace remove dream-team-marketplace
+```
+The npx form also strips the Dream Team section from your `CLAUDE.md` cleanly.
+
 ## License
 
 MIT

@@ -117,3 +117,5 @@ Same pattern 2+ projects → promoted to global rule
 - **Isolation:** Git worktrees for parallel agent lanes
 - **Memory:** Markdown files, no databases, no Docker
 - **Config:** `.claude/` directory (agents, commands, memory, settings)
+
+<!-- dream-team:end -->

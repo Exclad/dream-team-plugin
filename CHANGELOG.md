@@ -4,6 +4,17 @@ All notable changes to the Dream Team plugin and installer.
 Format: [Keep a Changelog](https://keepachangelog.com/). Versions cover the plugin,
 marketplace manifest, and `create-dream-team` npm package together (always in lockstep).
 
+## [1.3.0] — 2026-07-03
+
+### Added
+- **`npx create-dream-team uninstall`** — removes the plugin and marketplace registration,
+  strips the Dream Team section from CLAUDE.md (via new `<!-- dream-team:end -->` marker;
+  deletes the file only if it contained nothing else). Keeps `.claude/memory/` and
+  `.claude/rules/` by default — they're the project's history; `--purge` deletes them too
+- **`npx create-dream-team update`** — updates the plugin via marketplace and merges any
+  new memory templates (e.g. new config options) without touching existing files
+- CI lifecycle test covering update, uninstall, and `--purge`
+
 ## [1.2.0] — 2026-07-03
 
 ### Added

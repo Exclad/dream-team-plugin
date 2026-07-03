@@ -11,7 +11,7 @@
       "description": "29 specialized AI agents, 7 verification gates, structured memory, and self-learning. Full 6-phase pipeline from vision to shipped code. Includes concierge interviewing, parallel strategy, worktree-isolated execution, 6-gate verification, and automated shipping.",
       "source": "./dream-team-plugin",
       "category": "development",
-      "version": "1.2.0",
+      "version": "1.3.0",
       "author": {
         "name": "Exclad"
       },

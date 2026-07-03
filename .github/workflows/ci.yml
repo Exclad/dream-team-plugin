@@ -107,3 +107,28 @@ jobs:
           count=$(grep -c "dream-team:managed" CLAUDE.md)
           [ "$count" -eq 1 ] || { echo "CLAUDE.md section duplicated ($count markers)" >&2; exit 1; }
           echo "installer smoke test passed"
+
+      - name: Installer lifecycle test (update + uninstall)
+        run: |
+          BIN="$GITHUB_WORKSPACE/create-dream-team/bin/create-dream-team.js"
+          # uninstall strips section from a user CLAUDE.md, keeps memory by default
+          tmp=$(mktemp -d); cd "$tmp"
+          printf '# My Project\n\nMy own instructions.\n' > CLAUDE.md
+          node "$BIN" >/dev/null
+          node "$BIN" uninstall >/dev/null
+          grep -q "My own instructions" CLAUDE.md || { echo "user CLAUDE.md content lost" >&2; exit 1; }
+          grep -q "dream-team" CLAUDE.md && { echo "section not stripped" >&2; exit 1; }
+          [ -d .claude/memory ] || { echo "memory deleted without --purge" >&2; exit 1; }
+          # purge removes memory + rules; ours-only CLAUDE.md is deleted
+          tmp2=$(mktemp -d); cd "$tmp2"
+          node "$BIN" >/dev/null
+          node "$BIN" uninstall --purge >/dev/null
+          [ ! -f CLAUDE.md ] || { echo "ours-only CLAUDE.md not deleted" >&2; exit 1; }
+          [ ! -d .claude/memory ] || { echo "memory survived --purge" >&2; exit 1; }
+          # update merges a missing template back in
+          tmp3=$(mktemp -d); cd "$tmp3"
+          node "$BIN" >/dev/null
+          rm .claude/memory/config.md
+          node "$BIN" update >/dev/null
+          [ -f .claude/memory/config.md ] || { echo "update did not merge template" >&2; exit 1; }
+          echo "lifecycle test passed"

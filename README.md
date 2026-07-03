@@ -22,6 +22,9 @@ Then restart Claude Code and run:
 /dream-team "I want to build..."
 ```
 
+**Update:** `npx create-dream-team update` (or `claude plugin update dream-team@dream-team-marketplace`).
+**Uninstall:** `npx create-dream-team uninstall` — keeps your `.claude/memory/`; add `--purge` to remove everything.
+
 ## What you get
 
 - **29 agents** — concierge, PM, architect, ux-designer, frontend/backend/data/devops devs, executor, and a full verification tier.
