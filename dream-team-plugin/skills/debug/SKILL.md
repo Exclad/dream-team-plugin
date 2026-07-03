@@ -12,6 +12,11 @@ Execute the full debug pipeline using file-based handoffs: error-detective → d
 
 Keep per-agent prompts under 2,000 characters. Reference memory files rather than embedding full specs inline.
 
+## Conventions
+
+- **Model:** read `.claude/memory/config.md`; use the **verification** role's model for error-detective and debugger, the **execution** role's model for executor (`inherit` → omit the `model` parameter; config missing → `sonnet`).
+- **Checkpoint:** after each step, update `.claude/memory/context.md` and run `git add .claude/memory && git commit -m "checkpoint: debug <step>"` (unless `checkpoint_commits: off`).
+
 ## Execution
 
 ### Step 1: error-detective (investigation)

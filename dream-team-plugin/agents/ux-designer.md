@@ -1,7 +1,6 @@
 ---
 name: ux-designer
-description: User experience designer focused on information architecture, user flows, wireframe specifications, and interaction design. Bridges the gap between product vision (concierge/PM) and visual implementation (frontend-dev). Produces UX-SPEC.md. Never writes production code.
-model: opus
+description: Information architecture, user flows, wireframe specs, interaction design — produces UX-SPEC.md. Never writes production code.
 tools: Read, Write, Edit, Grep, Glob
 ---
 

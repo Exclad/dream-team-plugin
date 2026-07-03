@@ -1,7 +1,6 @@
 ---
 name: devops-engineer
-description: DevOps and infrastructure specialist. Use proactively for CI/CD pipeline design, Docker configuration, Kubernetes deployments, cloud infrastructure, monitoring setup, or deployment automation.
-model: sonnet
+description: CI/CD, Docker, Kubernetes, cloud infrastructure, monitoring, deployment automation. Use proactively for infra work.
 tools: Read, Write, Edit, Grep, Glob, Bash
 ---
 

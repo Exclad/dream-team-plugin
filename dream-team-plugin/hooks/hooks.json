@@ -1,5 +1,5 @@
 {
-  "description": "Dream Team session hooks — bootstraps memory/rules infrastructure on session start",
+  "description": "Dream Team session hooks — ensures memory skeleton in opted-in projects; logs failed Bash commands to the error ledger",
   "hooks": {
     "SessionStart": [
       {
@@ -8,6 +8,17 @@
           {
             "type": "command",
             "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/bootstrap.sh\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/log-error.sh\""
           }
         ]
       }

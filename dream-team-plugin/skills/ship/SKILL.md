@@ -7,6 +7,12 @@ description: Ship it — docs, release notes, version bump, PR, final approval
 
 **Prerequisite:** All 6 verification gates must pass (Phase 4 complete in context.md). If gates haven't passed, refuse and say: "Verification gates haven't passed yet. Run `/review` first."
 
+## Conventions
+
+- **Model:** read `.claude/memory/config.md`; pass the **ship** role's model as the `model` parameter on each Agent call (`inherit` → omit; config missing → `sonnet`).
+- **Append to every prompt:** "Return a ≤10-line summary — do NOT paste files back."
+- **Checkpoint:** after each step, update `.claude/memory/context.md` and run `git add .claude/memory && git commit -m "checkpoint: ship <step>"` (unless `checkpoint_commits: off`).
+
 ## Gap-Filling Rule
 
 Wait for ALL agents to complete before writing any file yourself. If an agent takes longer than expected, wait — do not preemptively write what you think it will produce. Two versions of the same file wastes work. If an agent fails to produce output after 1 retry, the orchestrator takes over.
@@ -27,10 +33,16 @@ Use the Agent tool: description="Create release"
 
 **Verify:** After agent returns, check that a version was determined. If NO, re-invoke ONCE.
 
-### Step 3: Final concierge check
-Use the Agent tool: description="Final vision check"
-- subagent_type: "dream-team:concierge"
-- prompt: "You are the concierge agent. Read `.claude/memory/VISION.md`. Examine what was built. Ask: 'Here's what we built. Does this match your vision?' Present structured comparison of requested vs delivered."
+### Step 3: Final vision check (runs INLINE — not as a subagent)
+Subagents cannot talk to the user, so you do this yourself:
+1. Read `.claude/memory/VISION.md` — what the user originally wanted.
+2. Examine what was actually built (codebase, docs, memory artifacts).
+3. Present a structured requested-vs-delivered comparison to the user and ask: "Here's what we built. Does this match your vision?"
+
+### Step 3b: Pattern promotion (self-learning)
+1. Scan `.claude/memory/patterns/*.md` and read each pattern's `Occurrences` count.
+2. Any pattern with 5+ occurrences not yet in `.claude/rules/`: write it there as a permanent rule and tick the pattern's Promotion Status.
+3. Update the Pattern Promotion Queue table in `.claude/memory/context.md`.
 
 ### Step 4: Create session summary
 Create `.claude/memory/sessions/YYYY-MM-DD.md` using the session summary template from `.claude/memory/sessions/_TEMPLATE.md`. Include:

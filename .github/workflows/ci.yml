@@ -1,0 +1,109 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate JSON manifests
+        run: |
+          node -e '
+            const fs = require("fs");
+            for (const f of [
+              ".claude-plugin/marketplace.json",
+              "dream-team-plugin/.claude-plugin/plugin.json",
+              "dream-team-plugin/hooks/hooks.json",
+              "create-dream-team/package.json",
+            ]) {
+              JSON.parse(fs.readFileSync(f, "utf-8"));
+              console.log("valid:", f);
+            }
+          '
+
+      - name: Versions match across manifests
+        run: sh scripts/bump-version.sh --check
+
+      - name: Templates in sync (plugin ↔ installer)
+        run: sh scripts/sync-templates.sh --check
+
+      - name: Shellcheck
+        run: |
+          sudo apt-get update -q && sudo apt-get install -yq shellcheck
+          shellcheck dream-team-plugin/scripts/*.sh scripts/*.sh
+
+      - name: Agent frontmatter sanity
+        run: |
+          node -e '
+            const fs = require("fs");
+            const files = fs.readdirSync("dream-team-plugin/agents").filter(f => f.endsWith(".md"));
+            if (files.length !== 27) throw new Error(`expected 27 agents, found ${files.length}`);
+            for (const f of files) {
+              const text = fs.readFileSync("dream-team-plugin/agents/" + f, "utf-8");
+              if (!text.startsWith("---")) throw new Error(f + ": missing frontmatter");
+              const fm = text.split("---")[1];
+              for (const key of ["name:", "description:"]) {
+                if (!fm.includes(key)) throw new Error(f + ": missing " + key);
+              }
+              if (/^model:/m.test(fm)) throw new Error(f + ": pins a model — model choice belongs to config.md profiles");
+            }
+            console.log("all 27 agents have valid frontmatter");
+          '
+
+      - name: Skill frontmatter sanity
+        run: |
+          node -e '
+            const fs = require("fs");
+            const dirs = fs.readdirSync("dream-team-plugin/skills");
+            for (const d of dirs) {
+              const p = `dream-team-plugin/skills/${d}/SKILL.md`;
+              const text = fs.readFileSync(p, "utf-8");
+              if (!text.startsWith("---")) throw new Error(p + ": missing frontmatter");
+              if (/run_in_background\s*[:=]\s*true/.test(text)) throw new Error(p + ": instructs nonexistent Agent param run_in_background");
+              console.log("valid:", p);
+            }
+          '
+
+      - name: Bootstrap is a no-op outside a Dream Team project
+        run: |
+          tmp=$(mktemp -d)
+          cd "$tmp"
+          CLAUDE_PLUGIN_ROOT="$GITHUB_WORKSPACE/dream-team-plugin" sh "$GITHUB_WORKSPACE/dream-team-plugin/scripts/bootstrap.sh"
+          if [ -d .claude ]; then
+            echo "bootstrap.sh scaffolded into a non-opted-in project" >&2
+            exit 1
+          fi
+          echo "no-op confirmed"
+
+      - name: Bootstrap --init scaffolds correctly
+        run: |
+          tmp=$(mktemp -d)
+          cd "$tmp"
+          CLAUDE_PLUGIN_ROOT="$GITHUB_WORKSPACE/dream-team-plugin" sh "$GITHUB_WORKSPACE/dream-team-plugin/scripts/bootstrap.sh" --init
+          for p in .claude/memory/context.md .claude/memory/errors/error-ledger.jsonl .claude/rules/README.md .claude/memory/patterns .claude/memory/decisions .claude/memory/sessions; do
+            [ -e "$p" ] || { echo "missing: $p" >&2; exit 1; }
+          done
+          echo "scaffold confirmed"
+
+      - name: Installer smoke test (steps 2-5, no plugin install)
+        run: |
+          tmp=$(mktemp -d)
+          cd "$tmp"
+          # `claude` CLI is absent in CI — installer must degrade gracefully.
+          node "$GITHUB_WORKSPACE/create-dream-team/bin/create-dream-team.js"
+          for p in .claude/memory/context.md .claude/rules CLAUDE.md; do
+            [ -e "$p" ] || { echo "missing: $p" >&2; exit 1; }
+          done
+          grep -q "dream-team:managed" CLAUDE.md
+          # Installer must never write settings.json
+          [ ! -f .claude/settings.json ] || { echo "installer wrote settings.json" >&2; exit 1; }
+          # Idempotency: second run must not duplicate the CLAUDE.md section
+          node "$GITHUB_WORKSPACE/create-dream-team/bin/create-dream-team.js"
+          count=$(grep -c "dream-team:managed" CLAUDE.md)
+          [ "$count" -eq 1 ] || { echo "CLAUDE.md section duplicated ($count markers)" >&2; exit 1; }
+          echo "installer smoke test passed"

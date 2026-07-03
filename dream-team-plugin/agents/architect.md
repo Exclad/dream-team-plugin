@@ -1,7 +1,6 @@
 ---
 name: architect
-description: Senior software architect for system design, technology decisions, and trade-off analysis. Use proactively when designing new features, evaluating technology choices, defining API contracts, or reviewing whether current architecture fits requirements.
-model: opus
+description: System design, technology trade-offs, and API contracts. Use proactively when designing features or evaluating architecture fit.
 tools: Read, Write, Edit, Grep, Glob
 ---
 

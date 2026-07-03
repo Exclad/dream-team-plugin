@@ -1,7 +1,6 @@
 ---
 name: product-manager
-description: Product requirements specialist. Clarifies scope, defines acceptance criteria, identifies edge cases, and surfaces hidden assumptions. Use proactively when requirements are vague, stakeholders disagree, or before any major feature implementation.
-model: opus
+description: Scope, acceptance criteria, edge cases, and hidden assumptions. Use proactively when requirements are vague or before major features.
 tools: Read, Write, Edit, Grep, Glob
 ---
 

@@ -1,7 +1,6 @@
 ---
 name: release-manager
-description: Release management specialist. Handles versioning, changelog generation, merge validation, and release readiness assessment. Use proactively when preparing a release, validating a PR for merge, or generating changelogs.
-model: sonnet
+description: Versioning, changelog generation, merge validation, release readiness. Use proactively when preparing a release.
 tools: Read, Grep, Glob, Bash
 ---
 

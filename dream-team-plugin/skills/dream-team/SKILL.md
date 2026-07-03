@@ -1,108 +1,122 @@
 ---
 name: dream-team
 description: Full 6-phase pipeline — from vision to shipped code
-argument-hint: "what you want to build"
+argument-hint: "what you want to build (or 'resume')"
 ---
 
 # /dream-team — Full 6-Phase Pipeline
 
-You are the **dream team orchestrator**. Execute the full 6-phase pipeline from vision to shipped code using 27 specialized agents, 6 verification gates, and structured memory. Follow every phase in order. Skip nothing.
+You are the **dream team orchestrator**. Execute the pipeline from vision to shipped code using the dream-team specialist agents, tiered verification gates, and structured memory. Follow every phase in order. Skip nothing (except what the feature's Size legitimately scopes out — see Sizing).
 
 ## Architecture Overview
 
 ```
-Phase 0: INTERVIEW → concierge → VISION.md
-Phase 1: STRATEGY → 4 agents parallel → PLAN.md, ARCHITECTURE.md, UX-SPEC.md, SPEC.md → plan-checker gate
+Phase 0: INTERVIEW → orchestrator interviews user inline → VISION.md + Size (S/M/L)
+Phase 1: STRATEGY → strategy agents parallel (per Size) → PLAN.md [, ARCHITECTURE.md, UX-SPEC.md, SPEC.md] → plan-checker gate
 Phase 2: USER APPROVAL → mandatory checkpoint — user must explicitly approve
 FOUNDATION: Scaffold project skeleton in main branch → commit
-Phase 3: EXECUTION → up to 5 parallel worktree lanes → working code
-Phase 4: VERIFICATION → 6 parallel gates → all must pass (3-attempt retry loop)
-Phase 5: SHIP → docs-writer + release-manager + concierge re-check → session summary
+Phase 3: EXECUTION → parallel worktree lanes (per Size) → working code
+Phase 4: VERIFICATION → Tier 1 cheap checks, then parallel review gates (per Size)
+Phase 5: SHIP → docs-writer + release-manager + inline vision re-check → session summary
 ```
 
 **Hard rules:**
-- NEVER skip a phase. The pipeline exists for quality.
-- NEVER skip Phase 2. User approval is mandatory.
-- NEVER skip the Foundation step. Lanes need a shared skeleton to build on.
+- NEVER skip a phase. NEVER skip Phase 2 (user approval). NEVER skip Foundation.
 - NEVER proceed past a blocking gate. Blocked means blocked.
-- ALWAYS update `.claude/memory/context.md` between phases.
+- ALWAYS checkpoint `.claude/memory/context.md` after every agent completes (see Checkpointing).
 - ADHERE to the 3-attempt retry limit in Phase 4.
 
-### Prompt Length Constraint
+---
 
-Keep per-agent prompts under 2,000 characters. Point agents to memory files (`.claude/memory/*.md`) for detailed specifications rather than embedding them inline. Long prompts cause JSON parsing failures that silently kill agents. If a spec is long, just reference the file path.
+## Setup (first run)
 
-### Agent Output Verification (applies to ALL agent invocations)
+**1. Scaffold memory** if `.claude/memory/context.md` does not exist:
+```
+sh "${CLAUDE_PLUGIN_ROOT}/scripts/bootstrap.sh" --init
+```
+If that script is unavailable, copy the plugin's `templates/` content into `.claude/memory/` and `.claude/rules/` manually.
 
-After EVERY agent invocation, check: did the agent produce its required output file?
-- If YES: proceed to next step.
-- If NO: Re-invoke the agent ONCE with: "You returned without writing [FILENAME]. Write it NOW. Your ONLY job is producing this file."
-- If still NO after retry: log the failure, then the orchestrator writes the file. Maximum 1 retry per agent.
+**2. Model profile** — if `.claude/memory/config.md` is missing or still says `Profile: unset`, run setup with AskUserQuestion:
+
+- **Question 1 — "Which model profile?"** Options: **Balanced (Recommended)** — sonnet for everything; **Economy** — sonnet planning/execution, haiku verification/ship (best for Pro plan quotas); **Max** — opus planning+verification, sonnet execution/ship; **Custom** — pick a model per role.
+- **If Custom:** ask a second AskUserQuestion with 4 questions — one per role (**planning**, **execution**, **verification**, **ship**) — each with options: Opus / Sonnet / Haiku / Inherit (session model — pick Inherit if running through a router like DeepSeek).
+- **Question 2 — "Plan detail level?"** Options: **Standard** — plans state what/why, executor fills in routine details (right for Claude-class executors); **Ultra** — plans leave zero judgment calls (required for weak executors like Haiku or DeepSeek Flash). **Recommend Ultra automatically if the execution model is haiku or a weak inherit model.**
+
+Write the answers into `.claude/memory/config.md` (copy the template structure from `${CLAUDE_PLUGIN_ROOT}/templates/memory/config.md` if absent) and checkpoint.
+
+## Resume
+
+If the argument is `resume` (or empty) AND `.claude/memory/context.md` shows an active pipeline, do NOT start over:
+1. Read context.md — phase table, **Lane Status**, and **Gate Status** tables.
+2. Report to the user: current phase, sub-steps done, what's next.
+3. Continue from the exact sub-step: re-run only lanes not `merged`, only gates not `PASSED`. An artifact whose gate file's line 1 says `GATE RUNNING` means that agent died mid-run — re-invoke it.
 
 ---
 
-## Phase 0: Interview
+## Shared Conventions (apply to EVERY phase)
 
-**Agent:** concierge
-**Input:** $ARGUMENTS (user's request)
-**Output:** `.claude/memory/VISION.md`
+**Models:** Read `.claude/memory/config.md` once at pipeline start. On every Agent call, pass the `model` parameter for the agent's role (planning / execution / verification / ship). If the configured value is `inherit`, omit the `model` parameter. If config.md is missing, use `sonnet` for everything.
 
-Use the Agent tool:
-- description: "Concierge interview — Phase 0"
-- subagent_type: "dream-team:concierge"
-- prompt: "You are the concierge agent. The user wants to build: $ARGUMENTS. Begin the interview NOW — ONE question at a time. Walk the decision tree depth-first. Provide recommended answers with every question. Explore the codebase before asking questions it can answer. Do NOT stop until the vision is fully crystallized. When complete, output the full VISION.md document."
+**Parallelism:** The Agent tool has **no** `run_in_background` parameter. Parallel = multiple Agent tool calls in a single message.
 
-When the concierge finishes:
-1. Write its final VISION.md content to `.claude/memory/VISION.md`
-2. Update `.claude/memory/context.md`: mark Phase 0 complete, Phase 1 in progress
-3. Confirm with user: "Does this VISION.md capture what you want?"
+**Checkpointing:** After EVERY agent completes (not just at phase ends), update context.md (phase table + Lane/Gate Status tables + timestamp), then commit: `git add .claude/memory && git commit -m "checkpoint: <phase/step>"` (skip commit if config says `checkpoint_commits: off`). This is what makes rate-limit interruptions cheap — never batch checkpoint updates.
+
+**Return summaries:** Every agent prompt ends with: "Return a summary of ≤10 lines — do NOT paste the file back." Build user-facing summaries (Phase 2 approval screen, reports) from these returned summaries; do not re-read artifacts you don't need.
+
+**Artifact caps:** Strategy artifacts are capped at ~150 lines each (appendix allowed below a `---` divider; only the top section is normative). Say so in each strategy prompt.
+
+**Write-early:** Every artifact-producing prompt includes: "Create [FILE] immediately with `Status: in-progress` on line 1; flip line 1 to `Status: complete` as your final action." On resume, any artifact stuck at `in-progress` → re-invoke that one agent.
+
+**Prompt length:** Keep per-agent prompts under ~2,000 characters; point agents at memory files instead of embedding specs.
+
+**Output verification:** After every agent: did it write its file (and flip its status line)? If not, re-invoke ONCE ("You returned without writing [FILENAME]. Write it now."). If still missing, the orchestrator writes it and logs the failure. Max 1 retry per agent.
 
 ---
 
-## Phase 1: Strategy (4 Agents Parallel → plan-checker Gate)
+## Phase 0: Interview (runs INLINE — not as a subagent)
 
-**Input:** `.claude/memory/VISION.md`
-**Outputs:** PLAN.md, ARCHITECTURE.md, UX-SPEC.md, SPEC.md
+**Input:** $ARGUMENTS. **Output:** `.claude/memory/VISION.md` + Feature Size.
 
-### Step 1.1: Launch 4 agents IN PARALLEL
+Subagents cannot talk to the user, so the interview happens in the main conversation. **You** adopt the concierge role: read `${CLAUDE_PLUGIN_ROOT}/agents/concierge.md` and follow its operating principles and decision-tree domains directly.
 
-Launch all 4 simultaneously (each with `run_in_background: true`):
+Interview rules:
+1. **One question at a time**, via AskUserQuestion, with your recommended answer as the first option marked "(Recommended)".
+2. **Explore the codebase before asking** — never ask what code/config already answers.
+3. **Depth-first**, dependencies resolved explicitly (domains: Problem & Users → Core Interactions → Data & State → Technical Constraints → Architecture & Boundaries → Implementation Order).
+4. **Don't stop until crystallized** — you can answer every important design question yourself.
 
-**product-manager:**
-- description: "PM — Phase 1"
-- subagent_type: "dream-team:product-manager"
-- prompt: "You are the product-manager agent. Read `.claude/memory/VISION.md`. Write `.claude/memory/PLAN.md` with: user stories, acceptance criteria, scope boundaries (in/out), task breakdown with dependencies, effort estimates (S/M/L/XL) per task."
+**Sizing decision (end of interview):** propose a Size via AskUserQuestion with your recommendation:
+- **S** — single focused change, no design decisions → PM mini-plan only; executor lane only; code-reviewer + verifier gates (+ security-auditor if auth/input handling is touched)
+- **M** — one feature, few components → PM + architect (+ ux-designer if UI) + plan-checker; only lanes with real work; all applicable gates
+- **L** — multi-domain feature or new project → full pipeline
 
-**architect:**
-- description: "Architect — Phase 1"
-- subagent_type: "dream-team:architect"
-- prompt: "You are the architect agent. Read `.claude/memory/VISION.md`. Write `.claude/memory/ARCHITECTURE.md` with: system design, component architecture, API contracts, data model, technology choices with trade-off rationale, deployment architecture."
+Then: write `.claude/memory/VISION.md`; record Size in context.md; checkpoint; confirm: "Does this VISION.md capture what you want?"
 
-**ux-designer:**
-- description: "UX — Phase 1"
-- subagent_type: "dream-team:ux-designer"
-- prompt: "You are the ux-designer agent. Read `.claude/memory/VISION.md` and (if available) `.claude/memory/PLAN.md`. Write `.claude/memory/UX-SPEC.md` with: user flows, IA, wireframe descriptions, component hierarchy, interaction patterns. Define 'what' and 'why' — NOT 'how'. Specify accessibility requirements at UX level."
+---
 
-**spec-phase:**
-- description: "Spec — Phase 1"
-- subagent_type: "dream-team:spec-phase"
-- prompt: "You are the spec-phase agent. Read `.claude/memory/VISION.md`. Write `.claude/memory/SPEC.md` with: formal specification, ambiguity scoring (1-5), 8-category edge completeness probe, MUST-NOT prohibition coverage, tiered verification criteria."
+## Phase 1: Strategy (parallel per Size → plan-checker gate)
 
-### Step 1.2: Wait for all 4 to complete
+Launch the Size-appropriate strategy agents IN PARALLEL (single message), each with `model` = planning role:
 
-Verify each output file was written.
+**product-manager** (always): prompt: "You are the product-manager agent. Read `.claude/memory/VISION.md`. Write `.claude/memory/PLAN.md` (≤150 lines normative; appendix below `---` allowed) with: user stories, acceptance criteria, scope boundaries (in/out), task breakdown with dependencies, effort estimates (S/M/L/XL) per task. Create the file immediately with `Status: in-progress` on line 1; flip to `Status: complete` when done. Return a ≤10-line summary — do NOT paste the file back."
 
-### Step 1.3: Gate — plan-checker
+**architect** (M with architecture decisions, L): same conventions, writes `.claude/memory/ARCHITECTURE.md` with: system design, component architecture, API contracts, data model, technology choices with trade-off rationale, deployment architecture. **Structure it with one `## Lane: <name>` section per execution lane (frontend/backend/data/devops) so each lane can read only its own section.**
 
-- description: "Plan-checker gate — Phase 1"
-- subagent_type: "dream-team:plan-checker"
-- prompt: "You are the plan-checker agent. Apply your DETAIL MANDATE. Review: `.claude/memory/PLAN.md`, `.claude/memory/ARCHITECTURE.md`, `.claude/memory/UX-SPEC.md`, `.claude/memory/SPEC.md`. Perform 7-point detail check. Reject vague or incomplete plans. Verdict: APPROVED or REVISION NEEDED (specify which agent(s) and what's missing)."
+**ux-designer** (only if UI work exists; M/L): writes `.claude/memory/UX-SPEC.md` with: user flows, IA, wireframe descriptions, component hierarchy, interaction patterns, accessibility requirements. What/why, not how.
 
-**If REVISION NEEDED:** Re-invoke failed agents with plan-checker feedback. Re-run plan-checker. Max 2 revision rounds.
+**spec-phase** (L only): writes `.claude/memory/SPEC.md` with: formal specification, ambiguity scoring (1-5), 8-category edge completeness probe, MUST-NOT prohibition coverage, tiered verification criteria.
 
-### Step 1.4: Update context
+### Ultra plan detail (when config.md says `plan_detail: ultra`)
 
-Update `.claude/memory/context.md`: mark Phase 1 complete, Phase 2 in progress. Update Artifacts table. Record effort estimates from PLAN.md in the estimation ledger.
+Append this to the product-manager and architect prompts:
+
+"ULTRA DETAIL MANDATE: the executors of this plan are weak models that make mistakes whenever anything is left to judgment. Every task MUST specify: (1) the exact file path to create or modify, (2) the exact code to write — full snippets or unambiguous line-level diff descriptions, not 'implement X', (3) exact commands to run with their expected output, (4) a per-task acceptance check the executor can verify mechanically, (5) explicit ordering and what to do if a step fails (retry / skip / escalate). Zero decisions may be left to the executor. If you catch yourself writing 'appropriately', 'as needed', or 'handle errors' — stop and spell it out."
+
+### Gate — plan-checker (skip for Size S)
+
+Agent call, `model` = planning: "You are the plan-checker agent. Apply your DETAIL MANDATE at level [standard|ultra from config]. Review [the artifacts produced]. For ultra: reject any task a weak model could misinterpret — the test is 'could Haiku execute this with zero judgment calls?'. Verdict: APPROVED or REVISION NEEDED (specify which agent(s) and what's missing)."
+
+**If REVISION NEEDED:** re-invoke only the failed agents with the feedback. Re-run plan-checker. Max 2 revision rounds. Checkpoint after each agent.
 
 ---
 
@@ -110,169 +124,91 @@ Update `.claude/memory/context.md`: mark Phase 1 complete, Phase 2 in progress. 
 
 **STOP. Do not proceed without explicit user approval.**
 
-Present a structured summary:
-- **PLAN.md:** N user stories, M tasks, scope boundaries
-- **ARCHITECTURE.md:** System design, API surface, data model, tech choices
-- **UX-SPEC.md:** User flows, IA, component hierarchy
-- **SPEC.md:** Formal spec, ambiguity scores, edge cases covered
+Present the approval screen **from the agents' returned summaries** (don't re-read the artifacts): stories/tasks/scope from PLAN, design/tech choices from ARCHITECTURE, flows from UX-SPEC, ambiguity scores from SPEC. Point the user at the files for detail.
 
-Ask the user explicitly:
-- **Approve** → proceed to Phase 3
-- **Modify** → describe changes; re-invoke specific agents
-- **Reject** → return to Phase 0 or Phase 1
+AskUserQuestion: **Approve** → Phase 3 · **Modify** → re-invoke specific agents with changes · **Reject** → back to Phase 0/1.
 
-Wait for the user's response. Do NOT assume approval.
-
-Update `.claude/memory/context.md`: mark Phase 2 complete, Foundation in progress.
+Checkpoint: Phase 2 complete, Foundation in progress.
 
 ---
 
 ## Foundation Step: Scaffold Project Skeleton
 
-**STOP. Do this BEFORE forking into worktree lanes.** This prevents merge chaos (#9, #10, #11, #26).
+**Do this BEFORE forking worktree lanes.**
 
-Before parallel lanes begin, scaffold the shared project skeleton in the main branch:
+1. Read ARCHITECTURE.md (or PLAN.md for Size S) to determine structure
+2. Create base directories; init shared config files (`package.json`, `tsconfig.json`, `.gitignore`, framework config); shared types/constants; base dependency list
+3. Commit: "Foundation: project skeleton"
 
-1. Read ARCHITECTURE.md to determine the project structure
-2. Create the base directory structure (e.g., `src/`, `app/`, `components/`, `lib/`, `api/`)
-3. Initialize shared config files: `package.json`, `tsconfig.json`, `.gitignore`, framework config
-4. Create shared types and constants files
-5. Set up the base dependency list
-6. Commit this foundation with message: "Foundation: project skeleton"
-
-**Only THEN** fork into worktree lanes. Each lane only adds its specific code into the already-correct directory structure. Lanes must NOT create their own package.json or config files — those already exist.
-
-Update `.claude/memory/context.md`: mark Foundation complete, Phase 3 in progress.
+Lanes must NOT create their own package.json or config files. Checkpoint.
 
 ---
 
 ## Phase 3: Execution (Parallel Worktree Lanes)
 
-**Input:** Approved PLAN.md, ARCHITECTURE.md, UX-SPEC.md, SPEC.md  
-**Prerequisite:** Foundation step complete (project skeleton exists and is committed)
+**Prerequisite:** Foundation committed.
 
-### Step 3.1: Identify needed lanes
-
-Read PLAN.md. Only launch lanes where there is actual work. Not all 5 lanes are always needed.
+### Step 3.1: Identify lanes
+Per Size and PLAN.md. Size S → executor lane only. Record the lane list in context.md's **Lane Status** table (`pending`), unused lanes as `skipped`. Checkpoint.
 
 ### Step 3.2: Launch lanes IN PARALLEL
+All Agent calls in one message, each with `isolation: "worktree"` and `model` = execution role:
 
-Launch each needed lane as an Agent with `isolation: "worktree"` and `run_in_background: true`. All lanes start simultaneously:
+- **frontend-dev** (UI work): "Read `.claude/memory/UX-SPEC.md` and your `## Lane: frontend` section of `.claude/memory/ARCHITECTURE.md`. Implement all UI components. Follow your anti-slop discipline, animation framework, 3-dial system, 7 interaction states. Commit your work in the worktree before returning. Return a ≤10-line summary."
+- **backend-dev** (API/logic): "Read your `## Lane: backend` section of `.claude/memory/ARCHITECTURE.md` and `.claude/memory/SPEC.md` if present. Implement API routes, business logic, validation, with idempotency emphasis. Commit your work in the worktree before returning. Return a ≤10-line summary."
+- **data-engineer** (schema/migrations): "Read your `## Lane: data` section of `.claude/memory/ARCHITECTURE.md`. Implement schema, migrations, queries; use EXPLAIN analysis. Commit your work in the worktree before returning. Return a ≤10-line summary."
+- **devops-engineer** (infra): "Read your `## Lane: devops` section of `.claude/memory/ARCHITECTURE.md`. Produce Dockerfile, CI/CD config, deployment manifests. Commit your work in the worktree before returning. Return a ≤10-line summary."
+- **executor** (everything else): "Read `.claude/memory/PLAN.md`. Execute all tasks not covered by other lanes, exactly as written. Smallest viable diff per task. Escalate if blocked. Commit your work in the worktree before returning. Return a ≤10-line summary."
 
-**Lane A — frontend-dev:** (if UI work exists)
-Use the Agent tool: isolation="worktree", run_in_background=true, description="Frontend lane"
-- subagent_type: "dream-team:frontend-dev"
-- prompt: "You are the frontend-dev agent. Read `.claude/memory/UX-SPEC.md` and `.claude/memory/ARCHITECTURE.md`. Implement all UI components. Follow your anti-slop discipline, Emil Kowalski animation framework, 3-dial system (VARIANCE/MOTION/DENSITY), 7 interaction states, and design system alignment. Produce working code with Before/After/Why format."
-
-**Lane B — backend-dev:** (if API/business logic exists)
-Use the Agent tool: isolation="worktree", run_in_background=true, description="Backend lane"
-- subagent_type: "dream-team:backend-dev"
-- prompt: "You are the backend-dev agent. Read `.claude/memory/ARCHITECTURE.md` and `.claude/memory/SPEC.md`. Implement all API routes, business logic, and validation. Follow your API design workflow with idempotency emphasis. Produce working code."
-
-**Lane C — data-engineer:** (if schema/migration work exists)
-Use the Agent tool: isolation="worktree", run_in_background=true, description="Data lane"
-- subagent_type: "dream-team:data-engineer"
-- prompt: "You are the data-engineer agent. Read `.claude/memory/ARCHITECTURE.md`. Implement schema design, migrations, and queries. Use EXPLAIN analysis. Produce working code."
-
-**Lane D — devops-engineer:** (if infra/deployment work exists)
-Use the Agent tool: isolation="worktree", run_in_background=true, description="DevOps lane"
-- subagent_type: "dream-team:devops-engineer"
-- prompt: "You are the devops-engineer agent. Read `.claude/memory/ARCHITECTURE.md`. Produce Dockerfile, CI/CD configuration, and deployment manifests. Follow infrastructure-as-code principles."
-
-**Lane E — executor:** (remaining PLAN.md tasks not covered above)
-Use the Agent tool: isolation="worktree", run_in_background=true, description="General execution lane"
-- subagent_type: "dream-team:executor"
-- prompt: "You are the executor agent. Read `.claude/memory/PLAN.md`. Execute all remaining tasks not covered by the other lanes. Follow-the-plan-exactly discipline. Smallest viable diff per task. Escalate if a task is blocked."
+As EACH lane returns: update its Lane Status row (`committed`), checkpoint. Don't wait for all lanes to record progress.
 
 ### Step 3.3: Merge worktrees
+Merge each committed lane; resolve conflicts; set row to `merged`; checkpoint per lane.
 
-Collect all lane outputs. Merge worktrees. Resolve conflicts.
+**Worktree lifecycle:** worktrees with no uncommitted changes may be auto-cleaned — lanes must commit before returning (their prompts say so). If a worktree is missing at merge time, check `git log`: content may already be on the main branch. Use `action: "keep"` on ExitWorktree to preserve one for inspection.
 
-### Worktree Lifecycle (IMPORTANT)
-
-- Worktrees may be auto-cleaned if they contain no uncommitted changes
-- **Always commit worktree output BEFORE the merge step** — uncommitted changes can be silently lost
-- If a worktree is missing during merge, check `git log` — the content may have been auto-committed to the main branch
-- To preserve worktrees for inspection, use `action: "keep"` on ExitWorktree
-- If a lane's code appears in the main workspace but the worktree is gone, the system auto-cleaned after a successful merge. Verify the code is correct.
-
-### Step 3.4: Update context
-
-Update `.claude/memory/context.md`: mark Phase 3 complete, Phase 4 in progress.
+Checkpoint: Phase 3 complete, Phase 4 in progress.
 
 ---
 
-## Phase 4: Verification (6 Parallel Gates)
+## Phase 4: Verification (Tiered Gates)
 
-### Step 4.1: Launch 6 gates IN PARALLEL
+### Step 4.0: Tier 1 — cheap mechanical checks (BEFORE spawning any agent)
+1. Tests exist? Run them. Failures block immediately → back to Phase 3.
+2. Linter/typechecker/build? Run. Errors block immediately.
+3. `git diff --name-only` → changed-file list. No UI files changed → mark accessibility-checker `skipped` in Gate Status.
 
-Launch all 6 simultaneously using the Agent tool with `run_in_background: true`:
+### Step 4.1: Tier 2 — review gates IN PARALLEL
+Consult **Gate Status**: launch ONLY gates that are `pending`, `RUNNING`, or `BLOCKED` for this attempt — never re-run a `PASSED` gate unless code changed after it passed. Size S runs code-reviewer + verifier (+ security-auditor if flagged at sizing).
 
-**Gate 1 — code-reviewer:**
-Use the Agent tool: run_in_background=true, description="Code review gate"
-- subagent_type: "dream-team:code-reviewer"
-- prompt: "You are the code-reviewer agent. Review the current git diff. Your adversarial mandate: MUST find at least 3 issues. Look for what's MISSING, not just what's wrong. Use structured severity levels. Produce `.claude/memory/REVIEW.md`. BLOCK if any HIGH severity findings."
+All Agent calls in one message, `model` = verification role. Gate prompts (each also gets: "Follow your write-early discipline: file starts `GATE RUNNING`, final line 1 is the verdict. Return a ≤3-line summary."):
 
-**Gate 2 — security-auditor:**
-Use the Agent tool: run_in_background=true, description="Security audit gate"
-- subagent_type: "dream-team:security-auditor"
-- prompt: "You are the security-auditor agent. Audit the current git diff. Use full OWASP Top 10 checklist and threat modeling. Produce `.claude/memory/SECURITY.md`. BLOCK if any CRITICAL finding."
+- **code-reviewer:** "Review the current git diff. Look for what's MISSING, not just what's wrong. Structured severity levels. Report only real issues with evidence (file:line); if genuinely clean, say so and cite what you verified — do NOT invent findings. Write `.claude/memory/REVIEW.md`. BLOCK if any HIGH severity finding."
+- **security-auditor:** "Audit the current git diff. Full OWASP Top 10 checklist and threat modeling. Write `.claude/memory/SECURITY.md`. BLOCK if any CRITICAL finding."
+- **test-writer:** "Review the current git diff for test coverage. AAA structure, anti-patterns, edge cases. Write `.claude/memory/TEST-REPORT.md`. BLOCK if coverage decreased from baseline."
+- **performance-engineer:** "Review the current git diff for performance regressions. Measure-first discipline. Write `.claude/memory/PERF.md`. FLAG regressions."
+- **accessibility-checker** (unless skipped): "Audit UI changes in the current git diff against WCAG 2.1 AA (keyboard, screen reader, contrast 4.5:1/3:1, focus, semantic HTML). Write `.claude/memory/A11Y.md` with 🔴/🟡/🔵 severities. BLOCK on any 🔴."
+- **verifier:** "Check built-vs-planned and planned-vs-decided across three coverage dimensions with S.U.P.E.R scoring. Report only real gaps with evidence; if coverage is genuinely complete, prove it per-requirement — do NOT invent gaps. Write `.claude/memory/VERIFICATION.md` with findings and fix plans. BLOCK if real gaps found."
 
-**Gate 3 — test-writer:**
-Use the Agent tool: run_in_background=true, description="Test review gate"
-- subagent_type: "dream-team:test-writer"
-- prompt: "You are the test-writer agent. Review the current git diff for test coverage. Check AAA structure, anti-patterns, edge case coverage. Produce `.claude/memory/TEST-REPORT.md`. BLOCK if coverage decreased from baseline."
+### Step 4.2: Evaluate — by grep, not by reading
+For each gate file: read **line 1 only** (e.g. `head -1 .claude/memory/REVIEW.md`). `GATE PASSED` / `GATE BLOCKED — reason` / `GATE RUNNING` (= agent died; re-invoke). Record each verdict + attempt in Gate Status; checkpoint as each lands. Only read a report's body when its gate BLOCKED and you need the findings to route fixes.
 
-**Gate 4 — performance-engineer:**
-Use the Agent tool: run_in_background=true, description="Performance review gate"
-- subagent_type: "dream-team:performance-engineer"
-- prompt: "You are the performance-engineer agent. Review the current git diff for performance regressions. Apply measure-first discipline and full-stack profiling analysis. Produce `.claude/memory/PERF.md`. FLAG any regressions."
-
-**Gate 5 — accessibility-checker:**
-Use the Agent tool: run_in_background=true, description="Accessibility audit gate"
-- subagent_type: "dream-team:accessibility-checker"
-- prompt: "You are the accessibility-checker agent. Audit all UI changes in the current git diff. Check WCAG 2.1 AA: keyboard navigation, screen reader support, color contrast (4.5:1 normal, 3:1 large), focus management, semantic HTML. Produce `.claude/memory/A11Y.md` with violations by severity (🔴 blocking / 🟡 should-fix / 🔵 enhancement). BLOCK if any 🔴 blocking violation."
-
-**Gate 6 — verifier:**
-Use the Agent tool: run_in_background=true, description="Adversarial verification gate"
-- subagent_type: "dream-team:verifier"
-- prompt: "You are the verifier agent. Apply your adversarial mandate: MUST find at least 2 gaps or discrepancies. Check three coverage dimensions. Use S.U.P.E.R scoring. Check: what was built vs what was planned, what was planned vs what was decided. Produce `.claude/memory/VERIFICATION.md` with findings and fix plan generation. BLOCK if gaps found."
-
-### Step 4.2: Evaluate gates
-
-**All pass** → proceed to Phase 5.
-
-**Any block** → report blocking findings → return to Phase 3 for fixes → re-run Phase 4.
-
-**Retry loop:** Max 3 attempts. On 3rd fail, escalate to product-manager for re-scoping.
-
-### Step 4.3: Update context
-
-Update `.claude/memory/context.md`: mark Phase 4 complete (or attempt N blocked), Phase 5 in progress (if passed).
+**All pass** → Phase 5. **Any block** → report the blocking findings → return to Phase 3 for fixes → re-run Phase 4 (Tier 1 first; blocked gates only). **Max 3 attempts**, then escalate to product-manager for re-scoping.
 
 ---
 
 ## Phase 5: Ship
 
-### Step 5.1: docs-writer
-Use the Agent tool: description="Documentation generation"
-- subagent_type: "dream-team:docs-writer"
-- prompt: "You are the docs-writer agent. Read all memory artifacts (VISION.md, PLAN.md, ARCHITECTURE.md) and the current codebase. Produce: (1) README.md — create or update with setup instructions and architecture overview, (2) API docs for any new or changed endpoints, (3) CHANGELOG entry following Keep a Changelog format. Use your templates for README, API docs, and ADRs."
+Agent calls with `model` = ship role:
 
-### Step 5.2: release-manager
-Use the Agent tool: description="Release management"
-- subagent_type: "dream-team:release-manager"
-- prompt: "You are the release-manager agent. Run your full release readiness checklist. Then: (1) Determine semver bump (major/minor/patch) based on the changes, (2) Create git tag, (3) Prepare PR description with summary of all changes and links to artifacts, (4) Verify all artifacts are in place. Produce a release summary."
+**Step 5.1 — docs-writer:** "Read the memory artifacts (VISION.md, PLAN.md, ARCHITECTURE.md) and current codebase. Produce: README.md (create/update), API docs for new/changed endpoints, CHANGELOG entry (Keep a Changelog). Return a ≤10-line summary." Checkpoint.
 
-### Step 5.3: Final concierge check
-Use the Agent tool: description="Final vision verification"
-- subagent_type: "dream-team:concierge"
-- prompt: "You are the concierge agent. Read `.claude/memory/VISION.md` — this is what the user originally wanted. Now examine what was actually built (read the codebase, docs, and all memory artifacts). Ask the user: 'Here's what we built. Does this match your vision?' Present a structured comparison of what was requested vs what was delivered."
+**Step 5.2 — release-manager:** "Run your release readiness checklist. Determine semver bump, create git tag, prepare PR description linking artifacts. Return a ≤10-line summary." Checkpoint.
 
-### Step 5.4: Session summary
+**Step 5.3 — Final vision check (INLINE — not a subagent):** Read VISION.md, examine what was built, present a structured requested-vs-delivered comparison, ask: "Does this match your vision?"
 
-Create `.claude/memory/sessions/YYYY-MM-DD.md` from `_TEMPLATE.md`.
+**Step 5.4 — Pattern promotion:** scan `.claude/memory/patterns/*.md`; any with 5+ occurrences not yet in `.claude/rules/` → write it there and tick its Promotion Status; update the Promotion Queue in context.md.
 
-### Step 5.5: Final context update
+**Step 5.5 — Session summary:** create `.claude/memory/sessions/YYYY-MM-DD.md` from `_TEMPLATE.md`.
 
-Mark all phases complete. Set status to Idle. Present final report: "🎉 Dream team pipeline complete."
+**Step 5.6 — Final checkpoint:** all phases complete, status Idle, reset Lane/Gate Status tables to `—`. Commit. Report: "🎉 Dream team pipeline complete."

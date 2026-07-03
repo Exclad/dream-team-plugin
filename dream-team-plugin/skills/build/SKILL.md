@@ -14,7 +14,18 @@ Execute implementation across parallel worktree lanes using the strategy artifac
 
 ## Prompt Length Constraint
 
-Keep per-agent prompts under 2,000 characters. Point agents to memory files (`.claude/memory/*.md`) for detailed specifications rather than embedding them inline. Long prompts cause JSON parsing failures.
+Keep per-agent prompts focused and under ~2,000 characters. Point agents to memory files (`.claude/memory/*.md`) for detailed specifications rather than embedding them inline — agents can read files themselves, and short prompts keep the orchestrator's context lean.
+
+## How to run lanes in parallel
+
+The Agent tool has no `run_in_background` parameter. To run lanes in parallel, issue all the Agent tool calls in a single message.
+
+## Conventions (apply to every lane)
+
+- **Model:** read `.claude/memory/config.md`; pass the **execution** role's model as the `model` parameter on each Agent call (`inherit` → omit; config missing → `sonnet`).
+- **Lane-scoped reads:** if ARCHITECTURE.md has `## Lane: <name>` sections, tell each lane to read only its own section (plus UX-SPEC/SPEC where relevant) — not the whole file.
+- **Append to every prompt:** "Return a ≤10-line summary — do NOT paste code back."
+- **Checkpoint:** track lanes in the **Lane Status** table in `.claude/memory/context.md` (pending / launched / committed / merged / skipped). Update the table as EACH lane returns and again when merged, committing each time: `git add .claude/memory && git commit -m "checkpoint: lane <name> <status>"` (unless `checkpoint_commits: off`). On resume, re-run only lanes not yet `merged`.
 
 ## Execution
 
@@ -46,35 +57,35 @@ Use the Agent tool:
 - isolation: "worktree"
 - description: "Frontend implementation"
 - subagent_type: "dream-team:frontend-dev"
-- prompt: "You are the frontend-dev agent. Read `.claude/memory/UX-SPEC.md` and `.claude/memory/ARCHITECTURE.md`. Implement all UI components. Follow your anti-slop discipline, Emil Kowalski animation framework, 3-dial system (VARIANCE/MOTION/DENSITY), 7 interaction states, and design system alignment. Produce working code with Before/After/Why review format."
+- prompt: "You are the frontend-dev agent. Read `.claude/memory/UX-SPEC.md` and `.claude/memory/ARCHITECTURE.md`. Implement all UI components. Follow your anti-slop discipline, Emil Kowalski animation framework, 3-dial system (VARIANCE/MOTION/DENSITY), 7 interaction states, and design system alignment. Produce working code with Before/After/Why review format. Commit your work in the worktree before returning."
 
 **Lane B: Backend** (if API/business logic work exists)
 Use the Agent tool:
 - isolation: "worktree"
 - description: "Backend implementation"
 - subagent_type: "dream-team:backend-dev"
-- prompt: "You are the backend-dev agent. Read `.claude/memory/ARCHITECTURE.md` and `.claude/memory/SPEC.md`. Implement API routes, business logic, and validation. Follow API design workflow with idempotency emphasis. Produce working code."
+- prompt: "You are the backend-dev agent. Read `.claude/memory/ARCHITECTURE.md` and `.claude/memory/SPEC.md`. Implement API routes, business logic, and validation. Follow API design workflow with idempotency emphasis. Produce working code. Commit your work in the worktree before returning."
 
 **Lane C: Data** (if schema/migration work exists)
 Use the Agent tool:
 - isolation: "worktree"
 - description: "Data layer implementation"
 - subagent_type: "dream-team:data-engineer"
-- prompt: "You are the data-engineer agent. Read `.claude/memory/ARCHITECTURE.md`. Implement schema design, migrations, queries. Use EXPLAIN analysis. Produce working code."
+- prompt: "You are the data-engineer agent. Read `.claude/memory/ARCHITECTURE.md`. Implement schema design, migrations, queries. Use EXPLAIN analysis. Produce working code. Commit your work in the worktree before returning."
 
 **Lane D: DevOps** (if infra/deployment work exists)
 Use the Agent tool:
 - isolation: "worktree"
 - description: "DevOps implementation"
 - subagent_type: "dream-team:devops-engineer"
-- prompt: "You are the devops-engineer agent. Read `.claude/memory/ARCHITECTURE.md`. Produce Dockerfile, CI/CD config, deployment manifests. Follow infrastructure-as-code principles."
+- prompt: "You are the devops-engineer agent. Read `.claude/memory/ARCHITECTURE.md`. Produce Dockerfile, CI/CD config, deployment manifests. Follow infrastructure-as-code principles. Commit your work in the worktree before returning."
 
 **Lane E: General** (remaining PLAN.md tasks)
 Use the Agent tool:
 - isolation: "worktree"
 - description: "General execution"
 - subagent_type: "dream-team:executor"
-- prompt: "You are the executor agent. Read `.claude/memory/PLAN.md`. Execute remaining tasks not covered by other lanes. Follow-the-plan-exactly. Smallest viable diff per task. Escalate if a task is blocked."
+- prompt: "You are the executor agent. Read `.claude/memory/PLAN.md`. Execute remaining tasks not covered by other lanes. Follow-the-plan-exactly. Smallest viable diff per task. Escalate if a task is blocked. Commit your work in the worktree before returning."
 
 ### Step 4: Collect and merge
 
@@ -90,9 +101,10 @@ Wait for all lanes to complete. For each lane:
 
 Update `.claude/memory/context.md`:
 - Set "Current Status" → Phase: Execution complete
-- Mark Phase 3 complete in pipeline table
+- Mark Phase 3 complete in pipeline table; all Lane Status rows `merged` or `skipped`
 - Note any deviations from PLAN.md
 - Update "Last Updated" timestamp
+- Commit the checkpoint
 
 ### Step 6: Proceed to verification
 

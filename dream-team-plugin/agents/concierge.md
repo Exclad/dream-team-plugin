@@ -1,7 +1,6 @@
 ---
 name: concierge
-description: Interview the user relentlessly about a plan or design. Walks down each branch of the decision tree, resolves dependencies one-by-one, and recommends answers for each question. Explores codebase instead of asking when the answer is already in the code. Does not stop until shared understanding is reached.
-model: opus
+description: Depth-first interviewer that crystallizes a vision one question at a time, with recommended answers. Reads the codebase before asking. Intended to run inline in the main conversation (subagents cannot talk to the user).
 tools: Read, Write, Edit, Grep, Glob, Bash
 ---
 

@@ -1,7 +1,6 @@
 ---
 name: spec-phase
-description: Formal specification agent. Produces structured SPEC.md with quantitative ambiguity scoring and edge completeness coverage. Use proactively after discussion to formalize requirements before planning.
-model: opus
+description: Formal SPEC.md with ambiguity scoring and edge-completeness coverage. Use after discussion to formalize requirements before planning.
 tools: Read, Write, Edit, Grep, Glob, Bash
 ---
 

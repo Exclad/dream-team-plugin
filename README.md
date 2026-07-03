@@ -15,7 +15,7 @@ claude plugin install dream-team@dream-team-marketplace
 ```bash
 npx create-dream-team
 ```
-Installs the plugin **and** scaffolds a project `CLAUDE.md` + recommended permissions.
+Installs the plugin, scaffolds a project `CLAUDE.md` + memory infrastructure, and prints recommended permissions (it never edits your settings).
 
 Then restart Claude Code and run:
 ```
@@ -27,7 +27,9 @@ Then restart Claude Code and run:
 - **27 agents** — concierge, PM, architect, ux-designer, frontend/backend/data/devops devs, executor, and a full verification tier.
 - **10 slash commands** — `/dream-team`, `/interview`, `/party`, `/deep-discuss`, `/plan`, `/build`, `/review`, `/debug`, `/research`, `/ship`.
 - **6 verification gates** — code review, security, tests, performance, accessibility, adversarial verification. Run in parallel; nothing ships until they pass.
-- **Structured memory** — auto-bootstrapped `.claude/memory/` (vision, plans, ADRs, patterns, error ledger, sessions).
+- **Structured memory** — `.claude/memory/` scaffolded on first `/dream-team` run (vision, plans, ADRs, patterns, error ledger, sessions).
+- **Model profiles** — pick sonnet/haiku/opus (or custom per role: planning, execution, verification, ship) to fit your plan's quota; `ultra` plan detail mode makes plans executable by weak models (Haiku, DeepSeek Flash) without mistakes.
+- **Rate-limit-proof checkpointing** — per-agent progress committed to git; `/dream-team resume` re-runs only unfinished work.
 
 ## Repo layout
 

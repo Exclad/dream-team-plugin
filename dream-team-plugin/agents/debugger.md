@@ -1,7 +1,6 @@
 ---
 name: debugger
-description: Methodical debugging specialist. Uses scientific method to isolate root causes. Use proactively when encountering unexpected errors, failing tests with no obvious cause, behavior differences between environments, or intermittent bugs.
-model: sonnet
+description: Scientific-method debugging — isolates root causes of errors, failing tests, and intermittent bugs. Use proactively on unexpected failures.
 tools: Read, Grep, Glob, Bash
 ---
 

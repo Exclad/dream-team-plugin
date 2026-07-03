@@ -14,7 +14,7 @@ npx create-dream-team
 2. **Scaffolds memory infrastructure** — `.claude/memory/` with templates for VISION.md, PLAN.md, ARCHITECTURE.md, patterns, ADRs, error ledger, sessions
 3. **Creates CLAUDE.md** — session bootstrap that loads context, ADRs, and patterns
 4. **Sets up `.claude/rules/`** — for permanent pattern promotion
-5. **Configures permissions** — recommended settings for agent tools
+5. **Prints recommended permissions** — it never writes to `.claude/settings.json`; granting tool permissions stays your decision
 
 ## After install
 

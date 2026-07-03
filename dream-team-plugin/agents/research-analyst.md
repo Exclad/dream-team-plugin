@@ -1,7 +1,6 @@
 ---
 name: research-analyst
-description: Evidence-based technology researcher. Evaluates libraries, frameworks, and architectural approaches with structured comparison and confidence levels. Use proactively when making technology decisions, comparing options, or evaluating build-vs-buy. Never recommends without evidence.
-model: opus
+description: Evidence-based evaluation of libraries, frameworks, and build-vs-buy decisions. Never recommends without evidence.
 tools: Read, Grep, Glob, WebSearch, WebFetch
 ---
 

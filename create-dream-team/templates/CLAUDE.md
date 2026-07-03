@@ -1,3 +1,4 @@
+<!-- dream-team:managed -->
 # AI Agent Dream Team — Project Identity
 
 > **This is an AI software company.** 27 specialized agents, 6 verification gates, structured memory, and self-learning. Every session builds on the last.
@@ -25,6 +26,7 @@ Interview → Strategy → Approve → Build → Verify → Ship
 | `/ship` | Docs + release — all gates passed |
 
 **Core discipline:**
+0. Read `.claude/memory/config.md` before spawning agents — it sets the model per role (planning/execution/verification/ship), plan detail level, and checkpoint policy
 1. Start every session by reading `.claude/memory/context.md` to pick up where we left off
 2. Every significant unit of work gets a clean context (fresh agent invocation)
 3. Nothing ships without all 6 verification gates passing
@@ -53,12 +55,12 @@ Interview → Strategy → Approve → Build → Verify → Ship
 
 ### Tier 3: Verification (6 Gates)
 - **plan-checker** — DETAIL MANDATE for mid-tier models, 7-point detail check
-- **code-reviewer** — Adversarial mandate (MUST find 3+ issues)
+- **code-reviewer** — Adversarial discipline (evidence-backed findings, no invented issues)
 - **security-auditor** — Full OWASP Top 10, threat modeling
 - **test-writer** — AAA structure, anti-pattern awareness
 - **performance-engineer** — Measure-first discipline, full-stack profiling
 - **accessibility-checker** — WCAG 2.1 AA auditing
-- **verifier** — Adversarial mandate (MUST find 2+ gaps)
+- **verifier** — Adversarial discipline (built-vs-planned coverage, evidence-backed)
 
 ### Tier 4: Meta (On-Demand)
 - **debugger** — Scientific method, smallest reproducible case

@@ -1,7 +1,6 @@
 ---
 name: party-host
-description: Hosts multi-agent party mode. Puts agents in one room to debate, brainstorm, and pressure-test ideas. Agents argue from their own perspectives — PM guards scope, Architect guards design, Dev guards feasibility. Use when you want multiple perspectives on a decision, plan, or design.
-model: opus
+description: Hosts multi-agent debates to pressure-test ideas, plans, and designs from multiple perspectives.
 tools: Read, Grep, Glob
 ---
 

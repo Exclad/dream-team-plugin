@@ -115,18 +115,20 @@ info('Step 3/5: Setting up CLAUDE.md...');
 const templateClaudeMd = path.join(templateDir, 'CLAUDE.md');
 const projectClaudeMd = path.join(cwd, 'CLAUDE.md');
 
+const DREAM_TEAM_MARKER = '<!-- dream-team:managed -->';
+
 if (!fileExists(projectClaudeMd)) {
   fs.copyFileSync(templateClaudeMd, projectClaudeMd);
   success('Created CLAUDE.md');
 } else {
   const existing = fs.readFileSync(projectClaudeMd, 'utf-8');
-  if (!existing.includes('dream-team') && !existing.includes('Dream Team')) {
+  if (!existing.includes(DREAM_TEAM_MARKER)) {
     // Append dream team section to existing CLAUDE.md
     const dreamTeamSection = fs.readFileSync(templateClaudeMd, 'utf-8');
     fs.appendFileSync(projectClaudeMd, '\n\n---\n\n' + dreamTeamSection);
     success('Appended Dream Team section to existing CLAUDE.md');
   } else {
-    log('  CLAUDE.md already has Dream Team content — skipping.');
+    log('  CLAUDE.md already has the Dream Team section — skipping.');
   }
 }
 
@@ -146,37 +148,27 @@ if (!fileExists(rulesDir)) {
 // ─── Step 5: Settings recommendations ───────────────────────────────────────
 info('Step 5/5: Checking permissions...');
 
+// Never write permissions silently — granting Bash access is a security-relevant
+// decision the user should make in their own settings. Print recommendations only.
 const settingsPath = path.join(claudeDir, 'settings.json');
+log('  Dream Team works best with these permissions in .claude/settings.json');
+log('  (add them yourself — this installer never grants permissions for you):');
+log('');
+log('  "permissions": {');
+log('    "allow": [');
+log('      "Bash(git:*)",');
+log('      "Bash(npm:*)",');
+log('      "Bash(npx:*)",');
+log('      "Bash(node:*)",');
+log('      "WebSearch"');
+log('    ]');
+log('  }');
+log('');
 if (fileExists(settingsPath)) {
-  log('  .claude/settings.json exists. Recommended permissions to add:');
-  log('');
-  log('  "permissions": {');
-  log('    "allow": [');
-  log('      "Bash(git:*)",');
-  log('      "Bash(npm:*)",');
-  log('      "Bash(npx:*)",');
-  log('      "Bash(node:*)",');
-  log('      "WebSearch(*)",');
-  log('      "WebFetch(*)"');
-  log('    ]');
-  log('  }');
+  log('  Your .claude/settings.json already exists — merge the block above into it.');
 } else {
-  // Create a minimal settings.json
-  const minimalSettings = {
-    permissions: {
-      allow: [
-        "Bash(git:*)",
-        "Bash(npm:*)",
-        "Bash(npx:*)",
-        "Bash(node:*)",
-        "WebSearch(*)",
-        "WebFetch(*)"
-      ]
-    },
-    worktree: { baseRef: "head" }
-  };
-  fs.writeFileSync(settingsPath, JSON.stringify(minimalSettings, null, 2) + '\n');
-  success('Created .claude/settings.json with recommended permissions');
+  log('  Create .claude/settings.json with the block above, or manage permissions');
+  log('  interactively when Claude Code prompts you.');
 }
 
 // ─── Done ───────────────────────────────────────────────────────────────────

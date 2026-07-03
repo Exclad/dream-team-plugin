@@ -1,6 +1,6 @@
 {
   "name": "create-dream-team",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Install the AI Agent Dream Team into your Claude Code project — 27 agents, 10 commands, memory infrastructure, one command",
   "bin": {
     "create-dream-team": "bin/create-dream-team.js"

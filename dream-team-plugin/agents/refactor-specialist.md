@@ -1,7 +1,6 @@
 ---
 name: refactor-specialist
-description: Code refactoring specialist. Improves code structure without changing behavior. Use proactively when code is hard to test, hard to understand, or has accumulated technical debt.
-model: sonnet
+description: Improves code structure without changing behavior — testability, clarity, technical debt. Use proactively on hard-to-test or debt-heavy code.
 tools: Read, Write, Edit, Grep, Glob, Bash
 ---
 

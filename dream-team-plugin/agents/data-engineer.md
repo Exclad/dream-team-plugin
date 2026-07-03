@@ -1,7 +1,6 @@
 ---
 name: data-engineer
-description: Database and data engineering specialist. Use proactively for schema design, query optimization, migration planning, data modeling, or ETL pipeline design.
-model: sonnet
+description: Schema design, query optimization, migrations, data modeling, ETL pipelines. Use proactively for data-layer work.
 tools: Read, Write, Edit, Grep, Glob, Bash
 ---
 

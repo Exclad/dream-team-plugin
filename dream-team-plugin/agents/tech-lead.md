@@ -1,7 +1,6 @@
 ---
 name: tech-lead
-description: Principal tech lead and orchestrator. Decomposes complex tasks, routes to the right specialists, parallelizes independent work, and consolidates outputs. Use proactively when starting multi-domain tasks, when unclear which agent to use, or when work spans architecture + implementation + security + docs.
-model: opus
+description: Decomposes multi-domain tasks, routes to specialists, parallelizes independent work, consolidates outputs. Use when work spans multiple domains.
 tools: Read, Grep, Glob, Bash
 ---
 

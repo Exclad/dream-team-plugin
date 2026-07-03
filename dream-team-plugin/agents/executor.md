@@ -1,7 +1,6 @@
 ---
 name: executor
-description: Implementation specialist. Writes, edits, and verifies code precisely as specified. The smallest viable diff always wins. Use after planning is complete to implement features, fix bugs, or refactor.
-model: sonnet
+description: Implements precisely as specified — smallest viable diff wins. Use after planning to implement, fix, or refactor.
 tools: Read, Write, Edit, Grep, Glob, Bash
 ---
 

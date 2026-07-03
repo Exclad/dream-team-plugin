@@ -1,7 +1,6 @@
 ---
 name: docs-writer
-description: Technical documentation specialist. Use proactively when writing READMEs, API documentation, architecture decision records (ADRs), user guides, or inline code documentation.
-model: sonnet
+description: READMEs, API docs, ADRs, user guides, inline documentation. Use proactively when docs are needed.
 tools: Read, Write, Edit, Grep, Glob
 ---
 

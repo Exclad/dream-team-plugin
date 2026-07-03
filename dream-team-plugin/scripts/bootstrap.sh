@@ -1,12 +1,26 @@
 #!/usr/bin/env sh
-# Dream Team session bootstrap.
-# Ensures the memory + rules infrastructure exists in the user's project so the
-# skills work even when the plugin is installed alone (without `npx create-dream-team`).
-# Idempotent: only creates what's missing, never overwrites existing files.
+# Dream Team bootstrap.
+#
+# Two modes:
+#   bootstrap.sh          (SessionStart hook) — NO-OP unless this project has
+#                         already opted in to Dream Team (i.e. .claude/memory/context.md
+#                         exists). Never scaffolds into unrelated projects.
+#   bootstrap.sh --init   (invoked by the /dream-team and /interview skills on
+#                         first run) — scaffolds .claude/memory/ and .claude/rules/
+#                         from the plugin templates. Idempotent: only creates what's
+#                         missing, never overwrites existing files.
 
 ROOT="${CLAUDE_PLUGIN_ROOT}"
 MEM=".claude/memory"
 RULES=".claude/rules"
+INIT=0
+[ "$1" = "--init" ] && INIT=1
+
+# Hook mode: if this project hasn't opted in, exit silently.
+# Opt-in marker = .claude/memory/context.md (created by --init or by the installer).
+if [ "$INIT" -eq 0 ] && [ ! -f "$MEM/context.md" ]; then
+  exit 0
+fi
 
 # Seed memory infrastructure if absent.
 if [ ! -d "$MEM" ]; then
@@ -33,5 +47,7 @@ if [ ! -d "$RULES" ] && [ -d "$ROOT/templates/rules" ]; then
   cp -R "$ROOT/templates/rules/." "$RULES/" 2>/dev/null || true
 fi
 
-echo "🧠 Dream Team loaded. 27 agents ready. Run /dream-team to start a new feature."
+if [ "$INIT" -eq 1 ]; then
+  echo "🧠 Dream Team memory scaffolded at $MEM/."
+fi
 exit 0

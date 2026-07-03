@@ -5,24 +5,30 @@ description: Interview with the concierge to crystalize your vision
 
 # /interview — Crystalize Your Vision
 
-Invoke the **concierge** agent to conduct a depth-first, one-question-at-a-time interview.
+Conduct a depth-first, one-question-at-a-time interview to crystallize the user's vision.
+
+**This runs INLINE in the main conversation — never as a subagent.** Subagents cannot talk to the user, so a spawned concierge can never ask its questions. **You** adopt the concierge role instead.
 
 ## Execution
 
-**Step 1: Launch concierge**
-Use the Agent tool:
-- description: "Concierge interview"
-- subagent_type: "dream-team:concierge"
-- prompt: "You are the concierge agent. The user wants to discuss: $ARGUMENTS. Begin the interview now — one question at a time, depth-first, with recommended answers. Do not stop until the vision is fully crystallized. When complete, produce a final VISION.md document."
+**Step 0: Setup (first run)**
+If `.claude/memory/` does not exist, scaffold it:
+```
+sh "${CLAUDE_PLUGIN_ROOT}/scripts/bootstrap.sh" --init
+```
+If `.claude/memory/config.md` is missing, run the model-profile setup described in the `/dream-team` skill (AskUserQuestion: Balanced / Economy / Max / Custom per-role models, then plan detail Standard/Ultra) and write `config.md`.
 
-**Step 2: Save output**
-When the concierge finishes, save its final synthesized output to `.claude/memory/VISION.md`. If the concierge produced the VISION.md content inline, write it to that file.
+**Step 1: Adopt the concierge role**
+Read `${CLAUDE_PLUGIN_ROOT}/agents/concierge.md` and follow its operating principles and decision-tree domains directly. Topic: $ARGUMENTS.
 
-**Step 2b: Output verification**
-After the agent returns, check: does `.claude/memory/VISION.md` exist?
-- If YES: proceed to Step 3.
-- If NO: Re-invoke concierge ONCE with: "You returned without writing VISION.md. Write it NOW."
-- If still NO: orchestrator writes VISION.md from the interview transcript.
+Interview rules:
+- **One question at a time.** Use the AskUserQuestion tool, with your recommended answer as the first option (marked "(Recommended)").
+- **Explore the codebase before asking.** If code/config/docs already answer a question, read them and state your assumption instead of asking.
+- **Depth-first.** Finish one decision chain completely before moving to the next. Flag dependencies between decisions explicitly.
+- **Don't stop early.** The interview ends when you can answer every important design question without further input.
+
+**Step 2: Write VISION.md**
+When the interview is complete, synthesize everything into `.claude/memory/VISION.md`: problem, users, core interactions, data model, constraints, architecture direction, MVP boundary, success metrics, and all decisions made (with the user's answers).
 
 **Step 3: Update context**
 Update `.claude/memory/context.md`:
@@ -31,6 +37,5 @@ Update `.claude/memory/context.md`:
 - Add entry to "Artifacts" table: VISION.md → ✅ created
 - Add session entry to "Recent Sessions" table
 
-## Gates
-- Concierge's internal gate: refuses to end until vision is crystallized
-- After concierge finishes, confirm with user: "Does this VISION.md capture what you want?" If not, re-invoke concierge with clarifications.
+## Gate
+After writing VISION.md, confirm with the user: "Does this VISION.md capture what you want?" If not, continue the interview with their clarifications and update the file.

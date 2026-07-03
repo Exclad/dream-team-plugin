@@ -1,7 +1,6 @@
 ---
 name: error-detective
-description: Root cause analysis specialist with evidence grading. Investigates errors and returns structured, verifiable RCA reports with confidence levels. Use proactively when encountering errors, failing tests, or unexpected behavior — BEFORE attempting fixes.
-model: haiku
+description: Root cause analysis with evidence grading — structured RCA reports BEFORE fixes are attempted. Use proactively on errors and failing tests.
 tools: Read, Grep, Glob, Bash
 ---
 

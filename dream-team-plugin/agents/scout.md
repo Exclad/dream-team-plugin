@@ -1,7 +1,6 @@
 ---
 name: scout
-description: Fast codebase reconnaissance. Searches, reads, and maps relevant code — returns structured findings that other agents can use without re-reading files. Use proactively when you need to understand what code exists before planning or implementing.
-model: haiku
+description: Fast codebase reconnaissance — maps relevant code into structured findings other agents can reuse. Use before planning or implementing.
 tools: Read, Grep, Glob, Bash
 ---
 

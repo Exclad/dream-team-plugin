@@ -1,11 +1,18 @@
 # Session Context
 
-> **Live state for the current session.** Updated at the end of every phase. Read first on every session start.
+> **Live state for the current session.** Updated after EVERY agent completion — not just at phase
+> boundaries — so a rate limit or dead session can resume mid-phase without redoing finished work.
+> Read first on every session start.
+>
+> **Checkpoint protocol:** after every update to this file, run
+> `git add .claude/memory && git commit -m "checkpoint: <phase/step>"` (unless
+> `checkpoint_commits: off` in `config.md`).
 
 ## Current Status
 
 - **Phase:** Idle (no active pipeline)
 - **Active Feature:** None
+- **Feature Size:** — (S / M / L — decided at end of Phase 0, controls which agents/lanes/gates run)
 - **Session Started:** 2026-06-22
 - **Last Updated:** 2026-06-22
 
@@ -21,6 +28,29 @@
 | 5: Ship | ⬜ pending | — | — | — |
 
 **Pipeline rule:** Phases execute in order. No phase skipped. Phase 2 (approval) is mandatory — never proceed without explicit user approval. Phase 4 has a 3-attempt retry limit; on 3rd fail, escalate to product-manager for re-scoping.
+
+### Lane Status (Phase 3 sub-steps)
+
+Update as each lane launches / commits / merges. On resume, re-run only lanes not yet `merged`.
+
+| Lane | Agent | Status (pending / launched / committed / merged / skipped) | Notes |
+|------|-------|--------|-------|
+| — | — | — | — |
+
+### Gate Status (Phase 4 sub-steps)
+
+Update each gate's verdict as it lands (verdict = line 1 of its report file). On resume or retry,
+re-run ONLY gates that are `pending`, `RUNNING`, or `BLOCKED` — never re-run a `PASSED` gate
+unless the code changed after it passed.
+
+| Gate | Report | Verdict (pending / RUNNING / PASSED / BLOCKED / skipped) | Attempt |
+|------|--------|---------|---------|
+| code-reviewer | REVIEW.md | — | — |
+| security-auditor | SECURITY.md | — | — |
+| test-writer | TEST-REPORT.md | — | — |
+| performance-engineer | PERF.md | — | — |
+| accessibility-checker | A11Y.md | — | — |
+| verifier | VERIFICATION.md | — | — |
 
 ## Blockers
 

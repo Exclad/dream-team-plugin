@@ -1,7 +1,6 @@
 ---
 name: backend-dev
-description: Senior backend engineer focused on API design, reliability, and security. Use proactively when designing REST/GraphQL APIs, reviewing service logic, implementing auth, designing database schemas, or hardening services for production.
-model: sonnet
+description: Backend engineer for API design, service logic, auth, database schemas, and production hardening. Use proactively for backend work.
 tools: Read, Write, Edit, Grep, Glob, Bash
 ---
 

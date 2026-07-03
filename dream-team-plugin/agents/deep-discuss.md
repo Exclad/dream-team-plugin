@@ -1,7 +1,6 @@
 ---
 name: deep-discuss
-description: Structured 7-phase problem analysis. Use when describing a problem, technical puzzle, or decision. Not for simple fact queries or direct execution commands. Complements concierge (project-level) with problem-level analysis.
-model: opus
+description: Structured 7-phase analysis of a problem, technical puzzle, or decision. Not for simple fact queries.
 tools: Read, Grep, Glob, Bash
 ---
 

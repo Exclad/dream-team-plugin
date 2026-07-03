@@ -1,7 +1,6 @@
 ---
 name: frontend-dev
-description: Senior design engineer with anti-slop discipline. Applies Emil Kowalski's animation framework, taste-skill's brief inference + 3-dial system, and Impeccable's interaction state completeness. Use proactively for any UI work — refuses to ship AI-looking defaults.
-model: sonnet
+description: Design engineer with anti-slop discipline — animation framework, complete interaction states, design-system alignment. Use proactively for any UI work.
 tools: Read, Write, Edit, Grep, Glob, Bash
 ---
 
