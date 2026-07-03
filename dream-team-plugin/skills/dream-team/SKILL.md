@@ -45,9 +45,11 @@ If that script is unavailable, copy the plugin's `templates/` content into `.cla
 
 Write the answers into `.claude/memory/config.md` (copy the template structure from `${CLAUDE_PLUGIN_ROOT}/templates/memory/config.md` if absent) and checkpoint.
 
-## Status
+## Status / Pause / Abort
 
-If the argument is `status`: read `.claude/memory/context.md` and report — current phase, Feature Size, Lane Status and Gate Status tables, blockers, and the single next action. Then STOP. No agents, no changes.
+- **`status`**: read `.claude/memory/context.md` and report — current phase, Feature Size, Lane Status / Gate Status / Telemetry tables, blockers, and the single next action. Then STOP. No agents, no changes.
+- **`pause`**: write a handoff note into context.md under Blockers ("PAUSED at <phase/step>; mid-flight: [...]; next action: [...]"), checkpoint-commit, and tell the user how to come back (`/dream-team resume`). Then STOP.
+- **`abort`**: confirm with the user first. Then: reset the pipeline, Lane Status, Gate Status, and Telemetry tables to idle; note the abort + reason in a session entry; offer to delete the feature branch (never delete without a yes). Checkpoint-commit.
 
 ## Resume
 
@@ -72,6 +74,14 @@ If the argument is `resume` (or empty) AND `.claude/memory/context.md` shows an 
 
 **Write-early:** Every artifact-producing prompt includes: "Create [FILE] immediately with `Status: in-progress` on line 1; flip line 1 to `Status: complete` as your final action." On resume, any artifact stuck at `in-progress` → re-invoke that one agent.
 
+**Pacing (Pro-plan rate limits):** if config says `pacing: conservative`, never launch more than 2 agents concurrently — split any parallel step into sequential pairs, checkpointing between pairs. Parallel bursts are what trip rate limits; a burst that dies mid-flight wastes every incomplete agent.
+
+**Telemetry & budget:** increment the Agent Spawn Telemetry table in context.md with every spawn and retry. If config `session_budget` > 0 and the next phase would exceed it, checkpoint and suggest pausing at this phase boundary — the cheapest possible stopping point.
+
+**Artifact digests:** when an artifact completes, write a one-line digest into the Artifacts table. On resume, reorient from digests — don't re-read artifacts unless actually needed for the next action.
+
+**After context compaction:** re-read `config.md` and `context.md` before the next action — never act on remembered state.
+
 **Prompt length:** Keep per-agent prompts under ~2,000 characters; point agents at memory files instead of embedding specs.
 
 **Output verification:** After every agent: did it write its file (and flip its status line)? If not, re-invoke ONCE ("You returned without writing [FILENAME]. Write it now."). If still missing, the orchestrator writes it and logs the failure. Max 1 retry per agent.
@@ -85,6 +95,7 @@ If the argument is `resume` (or empty) AND `.claude/memory/context.md` shows an 
 Subagents cannot talk to the user, so the interview happens in the main conversation. **You** adopt the concierge role: read `${CLAUDE_PLUGIN_ROOT}/agents/concierge.md` and follow its operating principles and decision-tree domains directly.
 
 Interview rules:
+0. **Transcript checkpointing:** append every Q + answer to `.claude/memory/discussions/interview-YYYY-MM-DD.md` AS YOU GO, committing every few exchanges. A rate limit mid-interview must lose at most one question — resume re-reads the transcript and continues from the last answer.
 1. **One question at a time**, via AskUserQuestion, with your recommended answer as the first option marked "(Recommended)".
 2. **Explore the codebase before asking** — never ask what code/config already answers.
 3. **Depth-first**, dependencies resolved explicitly (domains: Problem & Users → Core Interactions → Data & State → Technical Constraints → Architecture & Boundaries → Implementation Order).
@@ -96,7 +107,7 @@ Interview rules:
 - **L** — multi-domain feature or new project → full pipeline
 
 Then:
-1. Write `.claude/memory/VISION.md`; record Size in context.md.
+1. Write `.claude/memory/VISION.md` (~100 lines max — decisions and boundaries, not prose; the transcript holds the full detail); record Size in context.md.
 2. **ADR capture:** for each significant decision made during the interview (technology choice, architecture direction, scope cut — anything with rejected alternatives), write an ADR to `.claude/memory/decisions/YYYY-MM-DD-<slug>.md` using `_TEMPLATE.md`: the decision, the alternatives considered, and why. These are what the verifier's decision-coverage check verifies against.
 3. Checkpoint; confirm: "Does this VISION.md capture what you want?"
 
@@ -113,6 +124,8 @@ Launch the Size-appropriate strategy agents IN PARALLEL (single message), each w
 **ux-designer** (only if UI work exists; M/L): writes `.claude/memory/UX-SPEC.md` with: user flows, IA, wireframe descriptions, component hierarchy, interaction patterns, accessibility requirements. What/why, not how.
 
 **spec-phase** (L only): writes `.claude/memory/SPEC.md` with: formal specification, ambiguity scoring (1-5), 8-category edge completeness probe, MUST-NOT prohibition coverage, tiered verification criteria.
+
+**ai-engineer** (only if the feature includes LLM/AI functionality — any size): writes `.claude/memory/AI-SPEC.md` per its workflow (model choice + cost estimate, prompt architecture, structured output schema, eval plan, guardrails, failure modes). Execution lanes that touch the AI feature read AI-SPEC.md alongside their lane section.
 
 ### Ultra plan detail (when config.md says `plan_detail: ultra`)
 
@@ -190,8 +203,11 @@ Checkpoint: Phase 3 complete, Phase 4 in progress.
 2. Linter/typechecker/build? Run. Errors block immediately.
 3. `git diff --name-only` → changed-file list. No UI files changed → mark accessibility-checker `skipped` in Gate Status.
 
+### Step 4.0b: Tier 1.5 — smoke test (unless config `smoke_test: off`)
+Agent call, `model` = verification role: "You are the smoke-tester agent. Read `.claude/memory/VISION.md` for the primary user flow. Start the app and drive that flow end-to-end per your operating principles. Follow your write-early discipline into `.claude/memory/SMOKE.md`. Return a ≤3-line summary." Verdict `GATE BLOCKED` → route findings to the owning lane (targeted fix routing below) BEFORE spending anything on Tier 2. `GATE SKIPPED` acceptable only with a stated reason.
+
 ### Step 4.1: Tier 2 — review gates IN PARALLEL
-Consult **Gate Status**: launch ONLY gates that are `pending`, `RUNNING`, or `BLOCKED` for this attempt — never re-run a `PASSED` gate unless code changed after it passed. Size S runs code-reviewer + verifier (+ security-auditor if flagged at sizing).
+Consult **Gate Status** with hash caching: a gate whose Verdict is `PASSED` and whose **Pass hash** equals current `git rev-parse HEAD` is skipped mechanically — no judgment needed. Launch ONLY gates that are `pending`, `RUNNING`, `BLOCKED`, or passed at a stale hash. Size S runs code-reviewer + verifier (+ security-auditor if flagged at sizing). Respect `pacing: conservative` (max 2 concurrent).
 
 All Agent calls in one message, `model` = verification role. Gate prompts (each also gets: "Follow your write-early discipline: file starts `GATE RUNNING`, final line 1 is the verdict. Return a ≤3-line summary."):
 
@@ -203,7 +219,7 @@ All Agent calls in one message, `model` = verification role. Gate prompts (each 
 - **verifier:** "Check built-vs-planned and planned-vs-decided across three coverage dimensions with S.U.P.E.R scoring. Report only real gaps with evidence; if coverage is genuinely complete, prove it per-requirement — do NOT invent gaps. Write `.claude/memory/VERIFICATION.md` with findings and fix plans. BLOCK if real gaps found."
 
 ### Step 4.2: Evaluate — by grep, not by reading
-For each gate file: read **line 1 only** (e.g. `head -1 .claude/memory/REVIEW.md`). `GATE PASSED` / `GATE BLOCKED — reason` / `GATE RUNNING` (= agent died; re-invoke). Record each verdict + attempt in Gate Status; checkpoint as each lands. Only read a report's body when its gate BLOCKED and you need the findings to route fixes.
+For each gate file: read **line 1 only** (e.g. `head -1 .claude/memory/REVIEW.md`). `GATE PASSED` / `GATE BLOCKED — reason` / `GATE RUNNING` (= agent died; re-invoke). Record each verdict + attempt in Gate Status — **on a pass, also record `git rev-parse HEAD` in the Pass hash column** — and checkpoint as each lands. Only read a report's body when its gate BLOCKED and you need the findings to route fixes.
 
 **All pass** → Phase 5.
 

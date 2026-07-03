@@ -25,6 +25,8 @@ The Agent tool has no `run_in_background` parameter. To run lanes in parallel, i
 - **Model:** read `.claude/memory/config.md`; pass the **execution** role's model as the `model` parameter on each Agent call (`inherit` → omit; config missing → `sonnet`).
 - **Lane-scoped reads:** if ARCHITECTURE.md has `## Lane: <name>` sections, tell each lane to read only its own section (plus UX-SPEC/SPEC where relevant) — not the whole file.
 - **Append to every prompt:** "Return a ≤10-line summary — do NOT paste code back."
+- **Pacing:** if config says `pacing: conservative`, max 2 concurrent lanes — sequential pairs, checkpoint between pairs.
+- **Telemetry:** increment the Agent Spawn Telemetry table (Phase 3 row) with every spawn and retry.
 - **Checkpoint:** track lanes in the **Lane Status** table in `.claude/memory/context.md` (pending / launched / committed / merged / skipped). Update the table as EACH lane returns and again when merged, committing each time: `git add .claude/memory && git commit -m "checkpoint: lane <name> <status>"` (unless `checkpoint_commits: off`). On resume, re-run only lanes not yet `merged`.
 
 ## Execution

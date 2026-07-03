@@ -5,7 +5,7 @@ description: Ship it — docs, release notes, version bump, PR, final approval
 
 # /ship — Documentation + Release + Final Approval
 
-**Prerequisite:** All 6 verification gates must pass (Phase 4 complete in context.md). If gates haven't passed, refuse and say: "Verification gates haven't passed yet. Run `/review` first."
+**Prerequisite:** All verification gates must pass (Phase 4 complete in context.md). If gates haven't passed, refuse and say: "Verification gates haven't passed yet. Run `/review` first."
 
 ## Conventions
 
@@ -54,7 +54,7 @@ Subagents cannot talk to the user, so you do this yourself:
 Create `.claude/memory/sessions/YYYY-MM-DD.md` using the session summary template from `.claude/memory/sessions/_TEMPLATE.md`. Include:
 - Date and feature name
 - Pipeline phases completed
-- Agents invoked
+- Agents invoked + the Agent Spawn Telemetry table from context.md (spawns/retries per phase — this is how you learn what your model profile actually costs)
 - Key decisions made
 - Patterns discovered
 - Artifacts produced

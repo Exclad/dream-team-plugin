@@ -1,6 +1,6 @@
 ---
 name: review
-description: Run all 6 verification gates on the current changes
+description: Run all verification gates on the current changes
 ---
 
 # /review — Tiered Verification (cheap checks, then parallel gates)
@@ -16,13 +16,19 @@ Run the verification gates. No code ships without this passing.
 3. If the project has a linter/typechecker/build step: run it. Errors block immediately.
 4. From the changed-file list, decide whether UI files changed (components, templates, styles, markup). If NO UI files changed, **skip Gate 5 (accessibility)** below.
 
-Only when Tier 1 passes, proceed to Tier 2.
+Only when Tier 1 passes, proceed to Tier 1.5.
+
+### Step 0b: Tier 1.5 — smoke test (unless config `smoke_test: off`)
+
+Agent call, `model` = verification role: "You are the smoke-tester agent. Read `.claude/memory/VISION.md` for the primary user flow. Start the app and drive that flow end-to-end per your operating principles. Follow your write-early discipline into `.claude/memory/SMOKE.md`. Return a ≤3-line summary." `GATE BLOCKED` → route findings to the owning lane BEFORE spending anything on Tier 2. `GATE SKIPPED` acceptable only with a stated reason.
 
 ### Step 1: Tier 2 — launch review gates IN PARALLEL
 
 **Conventions:**
 - **Model:** read `.claude/memory/config.md`; pass the **verification** role's model as the `model` parameter on each Agent call (`inherit` → omit; config missing → `sonnet`).
-- **Only launch gates not already passed:** consult the **Gate Status** table in `.claude/memory/context.md` — launch only gates that are `pending`, `RUNNING`, or `BLOCKED` for this attempt. Never re-run a `PASSED` gate unless code changed after it passed.
+- **Hash caching:** consult the **Gate Status** table in `.claude/memory/context.md` — a gate whose Verdict is `PASSED` with a **Pass hash** equal to current `git rev-parse HEAD` is skipped mechanically. Launch only gates that are `pending`, `RUNNING`, `BLOCKED`, or passed at a stale hash. On every new pass, record the current HEAD hash in the table.
+- **Pacing:** if config says `pacing: conservative`, max 2 concurrent agents — run gates in sequential pairs, checkpointing between pairs.
+- **Telemetry:** increment the Agent Spawn Telemetry table (Phase 4 row) with every spawn and retry.
 - **Append to every gate prompt:** "Follow your write-early discipline: create the file with `GATE RUNNING` as line 1 first; your final action rewrites line 1 to the verdict (`GATE PASSED` or `GATE BLOCKED — [reason]`). Return a ≤3-line summary."
 - **Checkpoint:** as each gate's verdict lands, record it (+ attempt number) in the Gate Status table and run `git add .claude/memory && git commit -m "checkpoint: gate <name> <verdict>"` (unless `checkpoint_commits: off`).
 
@@ -64,6 +70,7 @@ Wait for all launched agents to complete. For each gate, verify its output file 
 
 | Gate | Expected File |
 |------|--------------|
+| smoke-tester | `.claude/memory/SMOKE.md` (Tier 1.5, unless off) |
 | code-reviewer | `.claude/memory/REVIEW.md` |
 | security-auditor | `.claude/memory/SECURITY.md` |
 | test-writer | `.claude/memory/TEST-REPORT.md` |
@@ -84,6 +91,7 @@ Blocking criteria per gate:
 
 | Gate | Blocks If |
 |------|-----------|
+| smoke-tester | Primary user flow broken or app won't start |
 | code-reviewer | HIGH severity finding |
 | security-auditor | CRITICAL finding |
 | test-writer | Coverage decreased |

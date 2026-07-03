@@ -1,6 +1,6 @@
 # AI Agent Dream Team
 
-> **27 specialized agents, 6 verification gates, structured memory, self-learning.**
+> **29 specialized agents, 7 verification gates, structured memory, self-learning.**
 > Turn Claude Code into a complete AI software company — vision → strategy → build → verify → ship.
 
 ## Install
@@ -24,9 +24,9 @@ Then restart Claude Code and run:
 
 ## What you get
 
-- **27 agents** — concierge, PM, architect, ux-designer, frontend/backend/data/devops devs, executor, and a full verification tier.
+- **29 agents** — concierge, PM, architect, ux-designer, frontend/backend/data/devops devs, executor, and a full verification tier.
 - **10 slash commands** — `/dream-team`, `/interview`, `/party`, `/deep-discuss`, `/plan`, `/build`, `/review`, `/debug`, `/research`, `/ship`.
-- **6 verification gates** — code review, security, tests, performance, accessibility, adversarial verification. Run in parallel; nothing ships until they pass.
+- **7 verification gates** — code review, security, tests, performance, accessibility, adversarial verification. Run in parallel; nothing ships until they pass.
 - **Structured memory** — `.claude/memory/` scaffolded on first `/dream-team` run (vision, plans, ADRs, patterns, error ledger, sessions).
 - **Model profiles** — pick sonnet/haiku/opus (or custom per role: planning, execution, verification, ship) to fit your plan's quota; `ultra` plan detail mode makes plans executable by weak models (Haiku, DeepSeek Flash) without mistakes.
 - **Rate-limit-proof checkpointing** — per-agent progress committed to git; `/dream-team resume` re-runs only unfinished work.

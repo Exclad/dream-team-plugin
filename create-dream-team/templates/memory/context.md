@@ -43,14 +43,30 @@ Update each gate's verdict as it lands (verdict = line 1 of its report file). On
 re-run ONLY gates that are `pending`, `RUNNING`, or `BLOCKED` — never re-run a `PASSED` gate
 unless the code changed after it passed.
 
-| Gate | Report | Verdict (pending / RUNNING / PASSED / BLOCKED / skipped) | Attempt |
-|------|--------|---------|---------|
-| code-reviewer | REVIEW.md | — | — |
-| security-auditor | SECURITY.md | — | — |
-| test-writer | TEST-REPORT.md | — | — |
-| performance-engineer | PERF.md | — | — |
-| accessibility-checker | A11Y.md | — | — |
-| verifier | VERIFICATION.md | — | — |
+A gate's **Pass hash** is `git rev-parse HEAD` at the moment it passed. On re-run: if HEAD still
+equals the pass hash, the pass is still valid — skip the gate mechanically, no judgment needed.
+
+| Gate | Report | Verdict (pending / RUNNING / PASSED / BLOCKED / skipped) | Attempt | Pass hash |
+|------|--------|---------|---------|-----------|
+| smoke-tester | SMOKE.md | — | — | — |
+| code-reviewer | REVIEW.md | — | — | — |
+| security-auditor | SECURITY.md | — | — | — |
+| test-writer | TEST-REPORT.md | — | — | — |
+| performance-engineer | PERF.md | — | — | — |
+| accessibility-checker | A11Y.md | — | — | — |
+| verifier | VERIFICATION.md | — | — | — |
+
+### Agent Spawn Telemetry
+
+Increment as agents are spawned. Feeds the `session_budget` check (config.md) and the session summary —
+after two features you can SEE what your model profile actually costs.
+
+| Phase | Spawns | Retries |
+|-------|--------|---------|
+| 1: Strategy | 0 | 0 |
+| 3: Execution | 0 | 0 |
+| 4: Verification | 0 | 0 |
+| 5: Ship | 0 | 0 |
 
 ## Blockers
 
@@ -68,14 +84,17 @@ None.
 
 ## Artifacts
 
-| Artifact | Path | Status | Last Updated |
-|----------|------|--------|-------------|
+The **Digest** column holds a one-line summary written when the artifact completes — on resume,
+read the digests to reorient instead of re-reading the artifacts themselves.
+
+| Artifact | Path | Status | Digest |
+|----------|------|--------|--------|
 | VISION.md | `.claude/memory/VISION.md` | ⬜ not created | — |
 | PLAN.md | `.claude/memory/PLAN.md` | ⬜ not created | — |
 | ARCHITECTURE.md | `.claude/memory/ARCHITECTURE.md` | ⬜ not created | — |
 | UX-SPEC.md | `.claude/memory/UX-SPEC.md` | ⬜ not created | — |
 | SPEC.md | `.claude/memory/SPEC.md` | ⬜ not created | — |
-| REVIEW.md | `.claude/memory/REVIEW.md` | ✅ exists | 2026-06-22 |
+| AI-SPEC.md | `.claude/memory/AI-SPEC.md` | ⬜ n/a unless LLM feature | — |
 
 ---
 

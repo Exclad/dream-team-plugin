@@ -29,7 +29,11 @@ process.stdin.on("end", () => {
       exit_code: typeof exitCode === "number" ? exitCode : null,
       stderr_head: String(r.stderr || "").slice(0, 300),
     };
-    require("fs").appendFileSync(process.argv[1], JSON.stringify(entry) + "\n");
+    const fs = require("fs");
+    fs.appendFileSync(process.argv[1], JSON.stringify(entry) + "\n");
+    // Rotation: keep the ledger bounded so it stays cheap to read.
+    const lines = fs.readFileSync(process.argv[1], "utf-8").split("\n").filter(Boolean);
+    if (lines.length > 1000) fs.writeFileSync(process.argv[1], lines.slice(-500).join("\n") + "\n");
   } catch {
     /* never block the tool */
   }

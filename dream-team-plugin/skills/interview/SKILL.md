@@ -22,6 +22,7 @@ If `.claude/memory/config.md` is missing, run the model-profile setup described 
 Read `${CLAUDE_PLUGIN_ROOT}/agents/concierge.md` and follow its operating principles and decision-tree domains directly. Topic: $ARGUMENTS.
 
 Interview rules:
+- **Transcript checkpointing:** append every Q + answer to `.claude/memory/discussions/interview-YYYY-MM-DD.md` AS YOU GO, committing every few exchanges — a rate limit mid-interview must lose at most one question. On resume, re-read the transcript and continue from the last answer.
 - **One question at a time.** Use the AskUserQuestion tool, with your recommended answer as the first option (marked "(Recommended)").
 - **Explore the codebase before asking.** If code/config/docs already answer a question, read them and state your assumption instead of asking.
 - **Depth-first.** Finish one decision chain completely before moving to the next. Flag dependencies between decisions explicitly.

@@ -41,6 +41,11 @@ if [ ! -f "$MEM/context.md" ]; then
   fi
 fi
 
+# Upgrade path: projects scaffolded by older versions lack config.md — seed it.
+if [ ! -f "$MEM/config.md" ] && [ -f "$ROOT/templates/memory/config.md" ]; then
+  cp "$ROOT/templates/memory/config.md" "$MEM/config.md" 2>/dev/null || true
+fi
+
 # Seed rules dir.
 if [ ! -d "$RULES" ] && [ -d "$ROOT/templates/rules" ]; then
   mkdir -p "$RULES"

@@ -42,7 +42,7 @@ jobs:
           node -e '
             const fs = require("fs");
             const files = fs.readdirSync("dream-team-plugin/agents").filter(f => f.endsWith(".md"));
-            if (files.length !== 27) throw new Error(`expected 27 agents, found ${files.length}`);
+            if (files.length !== 29) throw new Error(`expected 29 agents, found ${files.length}`);
             for (const f of files) {
               const text = fs.readFileSync("dream-team-plugin/agents/" + f, "utf-8");
               if (!text.startsWith("---")) throw new Error(f + ": missing frontmatter");
@@ -52,7 +52,7 @@ jobs:
               }
               if (/^model:/m.test(fm)) throw new Error(f + ": pins a model — model choice belongs to config.md profiles");
             }
-            console.log("all 27 agents have valid frontmatter");
+            console.log("all 29 agents have valid frontmatter");
           '
 
       - name: Skill frontmatter sanity

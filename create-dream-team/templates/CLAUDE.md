@@ -1,7 +1,7 @@
 <!-- dream-team:managed -->
 # AI Agent Dream Team — Project Identity
 
-> **This is an AI software company.** 27 specialized agents, 6 verification gates, structured memory, and self-learning. Every session builds on the last.
+> **This is an AI software company.** 29 specialized agents, 7 verification gates, structured memory, and self-learning. Every session builds on the last.
 
 ## How We Work
 
@@ -20,7 +20,7 @@ Interview → Strategy → Approve → Build → Verify → Ship
 | `/deep-discuss "problem"` | Structured 7-phase problem analysis |
 | `/plan` | Strategy phase — PM + architect + UX + spec |
 | `/build` | Execute from approved plans |
-| `/review` | All 6 verification gates |
+| `/review` | All 7 verification gates |
 | `/debug "symptom"` | Investigate and fix |
 | `/research "question"` | Technology evaluation |
 | `/ship` | Docs + release — all gates passed |
@@ -29,10 +29,10 @@ Interview → Strategy → Approve → Build → Verify → Ship
 0. Read `.claude/memory/config.md` before spawning agents — it sets the model per role (planning/execution/verification/ship), plan detail level, and checkpoint policy
 1. Start every session by reading `.claude/memory/context.md` to pick up where we left off
 2. Every significant unit of work gets a clean context (fresh agent invocation)
-3. Nothing ships without all 6 verification gates passing
+3. Nothing ships without all 7 verification gates passing
 4. Every bug becomes a pattern — the system gets smarter every session
 
-## Agent Roster (27 Specialists)
+## Agent Roster (29 Specialists)
 
 ### Tier 0: Front Door
 - **concierge** — Depth-first interviewer, one question at a time, crystalizes vision
@@ -44,6 +44,7 @@ Interview → Strategy → Approve → Build → Verify → Ship
 - **architect** — System design, trade-off analysis, API contracts
 - **ux-designer** — User flows, information architecture, wireframe specs
 - **spec-phase** — Formal specification with ambiguity scoring
+- **ai-engineer** — LLM feature design: model choice, prompt architecture, evals, guardrails (AI-SPEC.md)
 
 ### Tier 2: Execution
 - **frontend-dev** — Anti-slop discipline, accessibility-first, Emil Kowalski animation
@@ -53,8 +54,9 @@ Interview → Strategy → Approve → Build → Verify → Ship
 - **executor** — Follow-the-plan-exactly, smallest viable diff
 - **refactor-specialist** — Smell → refactoring mapping, characterization tests
 
-### Tier 3: Verification (6 Gates)
-- **plan-checker** — DETAIL MANDATE for mid-tier models, 7-point detail check
+### Tier 3: Verification (7 Gates)
+- **plan-checker** — Level-aware detail mandate (standard/ultra), 7-point detail check
+- **smoke-tester** — Runs the actual app, drives the primary user flow end-to-end
 - **code-reviewer** — Adversarial discipline (evidence-backed findings, no invented issues)
 - **security-auditor** — Full OWASP Top 10, threat modeling
 - **test-writer** — AAA structure, anti-pattern awareness

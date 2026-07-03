@@ -1,6 +1,6 @@
 # AI Agent Dream Team — Claude Code Plugin
 
-> **27 specialized agents, 6 verification gates, structured memory, self-learning.**  
+> **29 specialized agents, 7 verification gates, structured memory, self-learning.**  
 > Turn Claude Code into a complete AI software company.
 
 ## Quick Install
@@ -25,14 +25,14 @@ claude --plugin-dir ./dream-team-plugin
 
 ## What You Get
 
-### 27 Specialized Agents
+### 29 Specialized Agents
 
 | Tier | Agents |
 |------|--------|
 | **Front Door** | concierge, deep-discuss, party-host |
-| **Strategy** | product-manager, architect, ux-designer, spec-phase |
+| **Strategy** | product-manager, architect, ux-designer, spec-phase, ai-engineer |
 | **Execution** | frontend-dev, backend-dev, data-engineer, devops-engineer, executor, refactor-specialist |
-| **Verification** | plan-checker, code-reviewer, security-auditor, test-writer, performance-engineer, accessibility-checker, verifier |
+| **Verification** | plan-checker, smoke-tester, code-reviewer, security-auditor, test-writer, performance-engineer, accessibility-checker, verifier |
 | **Meta** | debugger, error-detective, docs-writer, release-manager, research-analyst, scout, tech-lead |
 
 ### 10 Slash Commands
@@ -45,14 +45,14 @@ claude --plugin-dir ./dream-team-plugin
 | `/deep-discuss "problem"` | 7-phase structured problem analysis |
 | `/plan` | Strategy phase — PM + architect + UX + spec → plan-checker |
 | `/build` | Execute from approved plans (parallel worktree lanes) |
-| `/review` | All 6 verification gates |
+| `/review` | All 7 verification gates |
 | `/debug "symptom"` | Scientific debugging pipeline |
 | `/research "question"` | Evidence-based technology evaluation |
 | `/ship` | Docs + release |
 
 ### Tiered Verification Gates
 
-Cheap mechanical checks first (tests, lint, build), then parallel review gates: code-reviewer, security-auditor, test-writer, performance-engineer, accessibility-checker (skipped when no UI changed), and verifier. Nothing ships without all gates passing.
+Cheap mechanical checks first (tests, lint, build), then the **smoke-tester actually runs the app** and drives the primary user flow (Tier 1.5 — catches "compiles but doesn't work" before review agents spend tokens), then parallel review gates: code-reviewer, security-auditor, test-writer, performance-engineer, accessibility-checker (skipped when no UI changed), and verifier. Passed gates record the commit hash — re-runs skip any gate whose hash still matches. Nothing ships without all gates passing.
 
 ### Self-Learning Memory
 
@@ -80,12 +80,15 @@ On first `/dream-team` run you pick a model profile (stored in `.claude/memory/c
 - **pr_flow** (`auto`/`on`/`off`) — pipeline works on a `feature/<slug>` branch and `/ship` opens a PR via `gh`; tag lands after merge.
 - **tdd** (`on`/`off`) — test-writer turns acceptance criteria into failing tests before lanes run; lanes make them pass. Pairs with `ultra` plan detail for weak executors.
 - **arbitration** (`on`/`off`) — a gate that blocks twice on the same finding triggers a one-shot opus arbitration (finding valid + definitive fix, or waived with reason) instead of a third blind retry.
+- **smoke_test** (`auto`/`on`/`off`) — the run-the-actual-app gate.
+- **pacing** (`eager`/`conservative`) — conservative caps concurrent agents at 2; parallel bursts are what trip Pro-plan rate limits.
+- **session_budget** (`N`) — soft spawn cap per session; the orchestrator suggests pausing at the nearest phase boundary when you'd exceed it.
 
 Also built in: blocked gates route findings to the *owning lane only* (never a full re-build), interview decisions are captured as ADRs in `.claude/memory/decisions/`, effort estimates vs actuals feed a drift check at ship time, and `/dream-team status` prints pipeline state without running anything.
 
 ## Rate-Limit-Proof Checkpointing
 
-Every agent completion updates `.claude/memory/context.md` (including per-lane and per-gate status tables) and commits it: `checkpoint: <phase/step>`. If a rate limit or dead session interrupts mid-phase, `/dream-team resume` re-runs **only** unfinished lanes and non-passed gates — passed work is never repeated. Gate reports start as `GATE RUNNING` and flip to a verdict on completion, so a half-finished gate can never masquerade as passed. Disable the commits with `checkpoint_commits: off` in config.md.
+Every agent completion updates `.claude/memory/context.md` (including per-lane and per-gate status tables) and commits it: `checkpoint: <phase/step>`. If a rate limit or dead session interrupts mid-phase, `/dream-team resume` re-runs **only** unfinished lanes and non-passed gates — passed work is never repeated (gate passes are cached by commit hash). Even the interview checkpoints: every Q&A lands in `.claude/memory/discussions/` as it happens, so a rate limit mid-interview loses at most one question. Gate reports start as `GATE RUNNING` and flip to a verdict on completion, so a half-finished gate can never masquerade as passed. `/dream-team pause` writes a handoff note for a deliberate stop; `/dream-team abort` cancels cleanly; `/dream-team status` shows where you are, including per-phase spawn telemetry. Disable the commits with `checkpoint_commits: off` in config.md.
 
 ## Requirements
 

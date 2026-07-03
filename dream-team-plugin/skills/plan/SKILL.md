@@ -14,7 +14,9 @@ Execute the full strategy tier: 4 agents in parallel → plan-checker gate.
 - **Model:** read `.claude/memory/config.md`; pass the **planning** role's model as the `model` parameter on each Agent call (`inherit` → omit the parameter; config missing → `sonnet`).
 - **Append to every prompt:** "Cap the file at ~150 normative lines (appendix below a `---` divider allowed). Create the file immediately with `Status: in-progress` on line 1; flip to `Status: complete` when done. Return a ≤10-line summary — do NOT paste the file back."
 - **Ultra plan detail:** if config.md says `plan_detail: ultra`, ALSO append to the product-manager and architect prompts: "ULTRA DETAIL MANDATE: the executors are weak models. Every task MUST specify: exact file path, exact code (full snippets or line-level diff descriptions), exact commands with expected output, a mechanical per-task acceptance check, explicit ordering and failure handling. Zero decisions left to the executor. Never write 'appropriately', 'as needed', or 'handle errors' without spelling it out."
-- **Checkpoint:** after EACH agent completes, update `.claude/memory/context.md` and run `git add .claude/memory && git commit -m "checkpoint: strategy <agent>"` (unless `checkpoint_commits: off`).
+- **Checkpoint:** after EACH agent completes, update `.claude/memory/context.md` (including its one-line digest in the Artifacts table and the Phase 1 Telemetry row) and run `git add .claude/memory && git commit -m "checkpoint: strategy <agent>"` (unless `checkpoint_commits: off`).
+- **Pacing:** if config says `pacing: conservative`, max 2 concurrent agents — sequential pairs.
+- **AI features:** if VISION.md includes LLM/AI functionality, also launch **ai-engineer** to write `.claude/memory/AI-SPEC.md` (same conventions).
 
 ## Execution
 

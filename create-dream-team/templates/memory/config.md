@@ -57,6 +57,19 @@ Rule of thumb: execution model `haiku` or a weak `inherit` model → set `ultra`
 - `on` — after Foundation, test-writer converts the plan's acceptance criteria into FAILING tests before any lane runs; lanes are told "make these tests pass". Strongly recommended with `plan_detail: ultra` — weak executors do far better with a mechanical target.
 - `off` — tests reviewed at the verification gate only
 
+**smoke_test:** auto
+- `auto` — after Tier 1 checks pass, the smoke-tester agent starts the app and drives the primary user flow (skips itself with a reason if nothing is runnable)
+- `on` — always run; a non-runnable app is a blocking finding
+- `off` — never run
+
+**pacing:** eager
+- `eager` — launch parallel agents in full bursts (fastest wall-clock)
+- `conservative` — **max 2 concurrent agents**; remaining work runs in sequential pairs. For Pro-plan users: parallel bursts of 4-6 agents are what trip rate limits fastest. Slower wall-clock, far fewer mid-phase interruptions.
+
+**session_budget:** 0
+- `0` — off
+- `N` — soft cap on agent spawns per session. The orchestrator counts spawns (Telemetry table in context.md); when a phase boundary would push past N, it checkpoints and suggests pausing there — phase boundaries are the cheapest place to stop and resume.
+
 **arbitration:** on
 - `on` — when the same gate blocks twice on the same finding, escalate that single finding to a one-shot opus arbitration call (verdict: finding VALID + definitive fix, or INVALID + why) instead of a third blind retry
 - `off` — plain 3-attempt retry loop
